@@ -2,125 +2,51 @@
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = TEST-NEEDS: sr71-blackglider
 
-== CRG Grade: C — ACHIEVED 2026-04-04
+Rewritten 2026-08-03 from measured runs. The previous content was the RSR
+template's own test ledger (Zig `main.zig`, `integration_test.zig`, template
+instantiation E2E, "CRG C achieved") inherited verbatim at mint — it described
+rsr-template-repo, not this project. Every count below comes from an observed
+local run on 2026-08-03; per the lesson recorded in the old file, tick boxes
+from observed output only.
 
-== Current State (Updated 2026-04-04)
+== Current State (measured 2026-08-03)
 
 [cols="2,1,4", options="header"]
 |===
 | Category | Count | Details
 
-| *Source modules* | 6 | 3 Idris2 ABI (Foreign, Layout, Types), 2 Zig FFI (build, main), 1 Zig integration test template
-| *Unit tests* | 0 | None in main source (inline tests in main.zig)
-| *Integration tests* | 1 | `test/integration_test.zig` (documented template, 1 placeholder test)
-| *E2E tests* | 1 | `tests/e2e/template_instantiation_test.sh` (full instantiation + validation)
-| *Workflow tests* | 1 | `tests/workflows/validate_workflows_test.sh` (21 workflows validated)
-| *Validation tests* | 1 | `scripts/validate-template.sh` (8-phase comprehensive validation)
-| *Benchmarks* | 5 | `benches/template_bench.sh` (validation, Zig build, tests, workflows, instantiation)
-| *Fuzz tests* | 0 | `README.adoc` scaffold with harness instructions
+| *Exhaustive kernel tests* | 12 | `tests/foundation.rs` (C1–C7) + `tests/constitutional.rs` (C8–C13); 512/512 local rules, 65,536/65,536 4×4 oracle worlds, 240-gen Snark trace. 12/12 green, debug and release.
+| *Formal proofs (Idris2)* | 2 gated / 5 quarantined | `verification/proofs/idris2/MANIFEST`, verified by `scripts/check-proofs.sh idris2` (quarantined modules must KEEP failing). Wired into `just test`.
+| *Formal proofs (Coq)* | 1 | `verification/proofs/coq/TypeSafety.v` — compiles clean under coqc 8.20.1, 1 Qed, zero admits. *UNWIRED* — no gate runs it.
+| *E2E tests* | 1 harness, 3 sections | `tests/e2e.sh`: release build → release-mode C1–C13 → proof gate (SKIPs loudly without idris2). Run by `.github/workflows/e2e.yml`.
+| *Aspect tests* | 3 | `tests/aspect_tests.sh`: SPDX coverage, dangerous Idris2 patterns, dangerous proof patterns (statement-form matching; comment-prose false positives fixed 2026-08-03). 3/3 green.
+| *Workflow tests* | 1 | `tests/workflows/validate_workflows_test.sh` — green.
+| *Fuzz tests* | 0 | `tests/fuzz/README.adoc` scaffold only; no harness.
+| *Zig FFI tests* | 0 | `src/interface/ffi/build.zig` builds; no test step; not wired into `just test`.
 |===
 
-== Completed Work (CRG C - Testing & Benchmarking)
+== Needs (priority order)
 
-=== Template Validation Script ✅
+. *Wire or descope the Coq proof* — TypeSafety.v compiles but nothing runs
+  it; either add a `check-proofs.sh coq` mode with its own MANIFEST or move
+  it under an explicitly-unwired examples note. Unwired is not done.
+. *Zig FFI test step* — `zig build test` target plus wiring into `just test`,
+  or remove the scaffold until the FFI seam is actually consumed (this is
+  also the READINESS E→D promotion blocker).
+. *Fuzz harness* — a `cargo-fuzz` target over `Life::step` input worlds would
+  exercise the kernel beyond the exhaustive finite domains (low priority:
+  the 4×4 domain is already complete, so fuzzing adds value only at larger
+  world sizes).
+. *Mission-specification tests* — blocked on the frozen mission spec
+  (PROOF-ROADMAP): once a mission exists, its replay certificates become
+  golden-file tests.
 
-* [x] `scripts/validate-template.sh` — 8-phase validation
-** Phase 1: Core repository structure (root files, directories)
-** Phase 2: Machine-readable metadata (`.machine_readable/`)
-** Phase 3: GitHub Actions workflows (17 required + all present)
-** Phase 4: Idris2 ABI and Zig FFI source files
-** Phase 5: Placeholder token replacement (skipped in template)
-** Phase 6: SPDX license headers (100% coverage, 6/6 files)
-** Phase 7: Build system verification (`zig build` + `idris2` syntax check)
-** Phase 8: Documentation requirements (TOPOLOGY, ABI-FFI-README, etc)
-* Status: *PASSING* (0 errors, 3 warnings about template placeholders)
+== Verification Commands
 
-=== E2E Template Instantiation Test ✅
-
-* [x] `tests/e2e/template_instantiation_test.sh` — full workflow
-** Clones template to temp directory
-** Runs the real `just init` (never a second copy of its substitution list)
-** Validates resulting structure with `scripts/validate-template.sh`
-** Verifies Zig build works after instantiation
-** Checks no placeholder survives, via `scripts/check-no-placeholders.sh`
-** Cleans up temp directory
-
-NOTE: this entry read `[x]` from the day it was written until 2026-07-17, while
-the test aborted at its first substitution line (`file: unbound variable`) on
-every invocation. Nothing noticed: CI ran `tests/e2e.sh`, which did not call it,
-and its only caller — `benches/template_bench.sh` — pipes it to `/dev/null` and
-appends `|| true`, so it was timing a script that died instantly. The tick was
-copied from the test's intent, not from a run. Tick these boxes from observed
-output only.
-* Status: *READY TO TEST* (can be verified by CI)
-
-=== Workflow Validation Test ✅
-
-* [x] `tests/workflows/validate_workflows_test.sh`
-** Validates all 21 workflows exist and have proper structure
-** Checks SPDX headers, `name` field
-** Verifies all 15 required workflows present
-* Status: *PASSING* (0 errors, 15/15 required workflows found)
-
-=== Zig FFI Tests ✅
-
-* [x] `src/interface/ffi/test/integration_test.zig` — template with examples
-** Converted from `sr71_blackglider` placeholders to "template" namespace
-** Added comprehensive comments for how to instantiate
-** Tests grouped by category (lifecycle, operations, strings, errors, version, memory safety, threading)
-** Compiles and passes placeholder test
-* Status: *PASSING* (1 test: `placeholder_test_implementation_required` passes)
-
-=== Benchmarks ✅
-
-* [x] `benches/template_bench.sh` — 5 benchmark suites
-** Validation script: ~5.8s average (3 runs)
-** Zig build: ~19ms (clean build)
-** Zig tests: ~20ms
-** Workflow validation: ~117ms
-** Template instantiation: ~427ms
-* Formats: human, json, csv
-* Status: *PASSING* (all benchmarks execute)
-
-=== Build System ✅
-
-* [x] `src/interface/ffi/build.zig` — updated for Zig 0.15.2
-** Simplified to test-only configuration
-** Supports both unit tests and integration tests
-** Works with `zig build` without errors
-* Status: *PASSING* (builds successfully)
-
-== Test Results Summary
-
+[source,bash]
 ----
-Validation Script:    PASS (0 errors, 3 warnings)
-Workflow Validation:  PASS (21/21 workflows valid)
-Integration Tests:    PASS (1/1 placeholder test)
-E2E Instantiation:    READY (needs CI confirmation)
-Benchmarks:           PASS (5/5 benchmark suites)
-Build System:         PASS (zig build succeeds)
+just test && just quality        # golden path
+bash tests/e2e.sh                # release-mode pipeline
+bash tests/aspect_tests.sh       # cross-cutting invariants
+bash tests/workflows/validate_workflows_test.sh
 ----
-
-== CRG C Compliance
-
-* *Coverage*: 6/6 test categories (unit, integration, E2E, workflow, validation, benchmarks)
-* *Documentation*: All test files have SPDX headers + inline documentation
-* *Author Attribution*: Jonathan D.A. Jewell <6759885+hyperpolymath@users.noreply.github.com>
-* *License*: MPL-2.0 on all new files
-* *Automation*: All scripts executable + working
-
-== FLAGGED ISSUES - ALL RESOLVED
-
-* [.line-through]#*Template repo used by ALL new repos has 0 validation tests*# → FIXED: 4 test suites + validation script
-* [.line-through]#*fuzz/placeholder.txt*# → FIXED: replaced with `README.adoc` containing real harness instructions
-* [.line-through]#*No E2E tests for template instantiation*# → FIXED: full E2E test suite
-* [.line-through]#*Zig FFI integration tests are placeholders*# → FIXED: converted to documented template format
-
-== Next Steps (Future Sessions)
-
-* [ ] Integrate test scripts into CI/CD workflows
-* [ ] Generate test coverage reports
-* [ ] Add more specialized benchmarks (memory, threading stress)
-* [ ] Document test instantiation patterns for new repos
-
-== Priority: P0 (COMPLETE) ✅

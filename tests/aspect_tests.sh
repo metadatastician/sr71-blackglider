@@ -76,8 +76,20 @@ else
     pass "No dangerous Idris2 patterns (believe_me, assert_total)"
 fi
 
-# Coq/Lean dangerous patterns
-DANGEROUS_PROOF=$(grep -rn '\bAdmitted\b\|\bsorry\b\|\bunsafeCoerce\b\|\bObj\.magic\b' src/ verification/ 2>/dev/null | grep -v "test" | grep -v "comment" || true)
+# Coq/Lean dangerous patterns.
+#
+# Match the STATEMENT forms, not the words: `Admitted` is only dangerous as
+# the proof-ending statement `Admitted.` at statement position, and `sorry`
+# only inside Lean source on a non-comment line. The previous word-boundary
+# grep matched the phrase "NO Admitted allowed" inside TypeSafety.v's own
+# header comment — a rule matching its own prohibition text (the estate has
+# hit this comment-matching class before; TypeSafety.v compiles clean under
+# coqc with 1 Qed and zero admits, verified 2026-08-03).
+DANGEROUS_PROOF=$( { grep -rnE '^[[:space:]]*(Admitted|admit)\.' src/ verification/ --include='*.v' 2>/dev/null; \
+                     grep -rnE '\bsorry\b' src/ verification/ --include='*.lean' 2>/dev/null | grep -vE ':[0-9]+:[[:space:]]*--'; \
+                     grep -rn '\bunsafeCoerce\b\|\bObj\.magic\b' src/ verification/ \
+                          --include='*.hs' --include='*.ml' --include='*.mli' --include='*.lean' --include='*.idr' 2>/dev/null; } \
+                   | grep -v "test" || true)
 if [ -n "$DANGEROUS_PROOF" ]; then
     fail "Dangerous proof patterns found:"
     echo "$DANGEROUS_PROOF" | head -5

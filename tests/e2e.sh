@@ -1,18 +1,26 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <j.d.a.jewell@open.ac.uk>
 #
-# RSR Standard E2E Test Template
+# SR-71 BlackGlider — End-to-end pipeline test
 #
-# End-to-end tests validate the full pipeline: build → run → verify output.
-# Customise this file for your project. Delete the examples that don't apply.
+# End-to-end here means the real pipeline this repository ships: build the
+# kernel in RELEASE mode and run the exhaustive C1–C13 gates against the
+# optimized artifact. rust-ci already runs the suite in debug; this harness
+# proves the same constitutional claims hold under optimization (a different
+# codegen path over the same 512-rule / 65,536-world / Snark-trace domains),
+# which is the closest thing to "build → run → verify output" a library
+# foundation has. The proof gate runs when idris2 is available and SKIPs
+# loudly when it is not (CI runners don't carry idris2; `just test` does).
+#
+# The template-instantiation smoke that previously lived here belonged to
+# rsr-template-repo, not to a minted project — per this file's own original
+# instruction ("delete the examples that don't apply"), it was removed
+# 2026-08-03 when the harness was instantiated for real.
 #
 # Usage:
 #   bash tests/e2e.sh
 #   just e2e
-#
-# Merge requirements (STANDING): All 6 test categories must pass before merge:
-#   P2P, E2E (this file), aspect, execution, lifecycle, benchmarks
 
 set -euo pipefail
 
@@ -29,125 +37,53 @@ red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 yellow(){ printf '\033[33m%s\033[0m\n' "$*"; }
 bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
 
-# ─── Assertion helpers ───────────────────────────────────────────────
-
-# check <label> <expected-substring> <actual>
-check() {
-    local name="$1" expected="$2" actual="$3"
-    if echo "$actual" | grep -q "$expected"; then
+# run_gate <label> <command...> — run a command, count PASS/FAIL loudly
+run_gate() {
+    local name="$1"; shift
+    if "$@"; then
         green "  PASS: $name"
         PASS=$((PASS + 1))
     else
-        red "  FAIL: $name (expected '$expected', got '${actual:0:120}')"
+        red "  FAIL: $name"
         FAIL=$((FAIL + 1))
     fi
 }
 
-# check_status <label> <expected-http-status> <actual-http-status>
-check_status() {
-    local name="$1" expected="$2" actual="$3"
-    if [ "$actual" = "$expected" ]; then
-        green "  PASS: $name (HTTP $actual)"
-        PASS=$((PASS + 1))
-    else
-        red "  FAIL: $name (expected HTTP $expected, got HTTP $actual)"
-        FAIL=$((FAIL + 1))
-    fi
-}
-
-# skip <label> <reason>
 skip_test() {
     yellow "  SKIP: $1 ($2)"
     SKIP=$((SKIP + 1))
 }
 
 echo "═══════════════════════════════════════════════════════════════"
-echo "  SR71_BLACKGLIDER — End-to-End Tests"
+echo "  SR-71 BlackGlider — End-to-End Pipeline"
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 
 # ─── Preflight ───────────────────────────────────────────────────────
 bold "Preflight checks"
-
-# TODO: Check that your binary/server is built
-# Example:
-# BINARY="$PROJECT_DIR/target/release/my-tool"
-# if [ ! -f "$BINARY" ]; then
-#     red "Binary not found at $BINARY — run 'just build' first"
-#     exit 1
-# fi
-# green "  Binary found: $BINARY"
-
-# TODO: Check dependencies
-# command -v curl >/dev/null 2>&1 || { red "curl not found"; exit 1; }
-# command -v jq >/dev/null 2>&1   || { red "jq not found"; exit 1; }
-
+command -v cargo >/dev/null 2>&1 || { red "  cargo not found — install a Rust toolchain"; exit 1; }
+green "  cargo found: $(cargo --version)"
 echo ""
 
-# ═══════════════════════════════════════════════════════════════════════
-# TODO: Add your E2E test sections below. Examples:
-# ═══════════════════════════════════════════════════════════════════════
+# ─── Section 1: release build ────────────────────────────────────────
+bold "Section 1: release build"
+run_gate "cargo build --release --all-targets" \
+    cargo build --release --all-targets --manifest-path "$PROJECT_DIR/Cargo.toml"
+echo ""
 
-# ─── Example: CLI tool E2E ───────────────────────────────────────────
-# bold "Section 1: CLI happy path"
-# OUTPUT=$($BINARY --help 2>&1)
-# check "help flag works" "Usage:" "$OUTPUT"
-#
-# OUTPUT=$($BINARY process input.txt --output /tmp/e2e-output.json 2>&1)
-# check "process command succeeds" "complete" "$OUTPUT"
-#
-# OUTPUT=$(cat /tmp/e2e-output.json)
-# check "output is valid JSON" '"status"' "$OUTPUT"
+# ─── Section 2: exhaustive gates under optimization ──────────────────
+bold "Section 2: C1–C13 exhaustive gates (release mode)"
+run_gate "cargo test --release --all-targets" \
+    cargo test --release --all-targets --manifest-path "$PROJECT_DIR/Cargo.toml"
+echo ""
 
-# ─── Example: Server E2E ────────────────────────────────────────────
-# bold "Section 2: Server lifecycle"
-# $BINARY serve --port 9999 &
-# SERVER_PID=$!
-# trap "kill $SERVER_PID 2>/dev/null" EXIT
-# sleep 2
-#
-# STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9999/health)
-# check_status "health endpoint" "200" "$STATUS"
-#
-# BODY=$(curl -s http://localhost:9999/health)
-# check "health response" '"status":"ok"' "$BODY"
-#
-# kill $SERVER_PID 2>/dev/null
-
-# ─── Example: VeriSimDB integration ─────────────────────────────────
-# bold "Section 3: VeriSimDB persistence"
-# VERISIM_URL="${VERISIM_API_URL:-http://localhost:9090}"
-# if ! curl -sf "$VERISIM_URL/health" >/dev/null 2>&1; then
-#     skip_test "VeriSimDB integration" "gateway not available"
-# else
-#     STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$VERISIM_URL/api/v1/hexads" \
-#         -H "Content-Type: application/json" \
-#         -d '{"tool":"SR71_BLACKGLIDER","modality":"document","content":"e2e test"}')
-#     check_status "hexad POST" "201" "$STATUS"
-# fi
-
-# ═══════════════════════════════════════════════════════════════════════
-# Template instantiation
-# ═══════════════════════════════════════════════════════════════════════
-# This is the harness CI runs (.github/workflows/e2e.yml calls tests/e2e.sh),
-# so the instantiation test has to be called from here to run at all. Until
-# now its only caller was benches/template_bench.sh, which discards the exit
-# code with `|| true` because a benchmark wants a duration, not a verdict —
-# so the test could fail on every run and nothing said so.
-INSTANTIATION_TEST="$(dirname "$0")/e2e/template_instantiation_test.sh"
-if [ -f "$INSTANTIATION_TEST" ]; then
-    echo ""
-    echo "── Template instantiation ─────────────────────────────────────"
-    if bash "$INSTANTIATION_TEST" "$(dirname "$0")/.."; then
-        green "PASS: template instantiation"
-        PASS=$((PASS + 1))
-    else
-        red "FAIL: template instantiation"
-        FAIL=$((FAIL + 1))
-    fi
+# ─── Section 3: constitutional proof gate (when a prover is present) ─
+bold "Section 3: Idris2 constitutional gate"
+if command -v idris2 >/dev/null 2>&1; then
+    run_gate "check-proofs.sh idris2 (MANIFEST-gated)" \
+        bash "$PROJECT_DIR/scripts/check-proofs.sh" idris2
 else
-    yellow "SKIP: template instantiation (test not found)"
-    SKIP=$((SKIP + 1))
+    skip_test "check-proofs.sh idris2" "idris2 not installed on this runner; covered by 'just test' locally"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════
