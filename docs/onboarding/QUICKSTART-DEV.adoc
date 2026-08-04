@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// Template: QUICKSTART-DEV.adoc — clone → build → test → PR
+= sr71-blackglider — Quick Start for Developers
+:toc:
+:toclevels: 2
+
+== Tech Stack
+
+* *Rust 1.97* (pinned in `mise.toml`) — the B3/S23 reference kernel, glider
+  catalogue, spacetime embedding, and certificates (`src/`), with the
+  exhaustive C1–C13 test suite (`tests/`). The crate is
+  `#![forbid(unsafe_code)]`.
+* *Idris2 0.7.0* — the gated constitutional proof companion
+  (`verification/proofs/idris2/`, MANIFEST-driven).
+* *Zig* — FFI/ABI seam scaffold (`src/interface/ffi/`), builds but not yet
+  wired into the golden path.
+* *just 1.56* — task runner (`Justfile`).
+
+== Set Up Development Environment
+
+=== Option A: Guix (preferred)
+
+[source,bash]
+----
+guix shell -D -f build/guix.scm
+----
+
+=== Option B: mise
+
+[source,bash]
+----
+git clone https://github.com/metadatastician/sr71-blackglider.git
+cd sr71-blackglider
+mise install    # installs the pinned rust + just
+----
+
+== Build
+
+[source,bash]
+----
+just build          # cargo build --all-targets
+----
+
+== Test
+
+[source,bash]
+----
+just test           # cargo test + the Idris2 proof gate (check-proofs.sh)
+----
+
+== Project Structure
+
+[source]
+----
+sr71-blackglider/
+├── src/                        # Rust kernel: life, glider, embedding, certificate
+├── src/interface/Abi/          # Idris2 ABI definitions
+├── src/interface/ffi/          # Zig FFI bridge scaffold
+├── tests/                      # foundation.rs (C1–C7), constitutional.rs (C8–C13)
+├── verification/proofs/idris2/ # Proof companion + MANIFEST (gated/quarantined ledger)
+├── docs/                       # Documentation; status ledgers in docs/status/
+├── .machine_readable/          # Checkpoint files (STATE, META, ECOSYSTEM)
+├── Justfile                    # Task runner recipes
+├── build/guix.scm              # Guix environment
+└── 0-AI-MANIFEST.a2ml          # AI agent entry point
+----
+
+== Key Recipes
+
+[source,bash]
+----
+just build          # Build the project
+just test           # Run tests + proof gate
+just quality        # Full quality gates (golden path: just test && just quality)
+just doctor         # Self-diagnostic
+just lint           # Lint and format
+just tour           # Guided tour of the codebase
+----
+
+== Before Submitting a PR
+
+[source,bash]
+----
+just lint           # Format and lint
+just test && just quality   # The golden path must be green
+----
+
+== Contractile Invariants
+
+Read `.machine_readable/contractiles/must/Mustfile.a2ml` before making
+changes. Key invariants that must never be violated:
+
+* *One canonical B3/S23 world is the whole physical truth.* Presentation
+  (surfaces, textures, curvature) is a one-way observer: it may render
+  Conway's history, never author it.
+* *Objective manoeuvres are Conway reactions*, not commanded kinematics.
+* *No `unsafe` Rust* (`#![forbid(unsafe_code)]`), no `believe_me` /
+  `assert_total` in gated proofs.
+* *The quarantine ledger is honest*: a quarantined proof module that starts
+  compiling is itself a gate failure — update the MANIFEST, don't ignore it.
+
+== LLM/AI Agent Development
+
+Read `0-AI-MANIFEST.a2ml` and `CLAUDE.md` first — they carry the arrival
+pack and the repo's IS / IS-NOT boundary.
+
+== Get Help
+
+* **Architecture**: link:../../EXPLAINME.adoc[EXPLAINME.adoc], `ARCHITECTURE.md`
+* **Proof frontier**: `PROOF-ROADMAP.md`, `docs/status/PROOF-STATUS.adoc`
+* **Report issue**: `just help-me`

@@ -1,0 +1,16 @@
+[package]
+name = "sr71-blackglider"
+version = "0.1.0"
+edition = "2024"
+license = "MPL-2.0"
+description = "Proof-bearing Conway spacetime foundation for SR-71 BlackGlider"
+repository = "https://github.com/metadatastician/sr71-blackglider"
+
+[lib]
+path = "src/lib.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+

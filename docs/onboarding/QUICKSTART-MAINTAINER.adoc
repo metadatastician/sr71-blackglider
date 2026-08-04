@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// Template: QUICKSTART-MAINTAINER.adoc — packaging, deploying, and maintaining
+= sr71-blackglider — Quick Start for Platform Maintainers
+:toc:
+:toclevels: 2
+
+== Overview
+
+*There is nothing to package yet.* SR-71 BlackGlider is currently a proven
+foundation — a Rust library crate plus its exhaustive test suite and an Idris2
+proof companion — with no installable binary, no configuration file, and no
+release (see `docs/status/READINESS.adoc`, grade E; CHANGELOG is all
+`[Unreleased]`). This guide will grow real packaging content when the first
+release exists; until then it deliberately makes no claims.
+
+== Runtime Dependencies
+
+None to distribute. Build-time toolchain: Rust 1.97 and just 1.56 (pinned in
+`mise.toml`), Idris2 0.7.0 for the proof gate, Zig for the FFI scaffold.
+
+== Verify from Source
+
+The only supported "distribution" today is the source tree itself:
+
+[source,bash]
+----
+git clone https://github.com/metadatastician/sr71-blackglider.git
+cd sr71-blackglider
+mise install
+just test && just quality    # the golden path must be green
+----
+
+== Packaging
+
+=== Guix
+
+A development environment definition exists:
+
+[source,bash]
+----
+guix shell -D -f build/guix.scm
+----
+
+A buildable Guix *package* (with outputs) is future work, gated on the first
+release.
+
+=== Container / Manual Package / Configuration / Multi-Instance
+
+Not applicable until an executable exists. The template sections that stood
+here described install prefixes, config paths, and multi-instance deployment
+for a binary this repository does not ship; they were removed rather than
+left half-filled (an install guide for a nonexistent binary is fiction, not
+documentation).
+
+== Health Checks
+
+[source,bash]
+----
+just doctor                          # Full diagnostic
+bash scripts/check-proofs.sh idris2  # Proof-gate self-check
+----
+
+== Security Notes
+
+* License: MPL-2.0 (code) / CC-BY-SA-4.0 (docs)
+* GitHub Actions dependencies SHA-pinned
+* Rust crate is `#![forbid(unsafe_code)]` with zero external runtime deps
+
+== Reporting Issues
+
+* Upstream: https://github.com/metadatastician/sr71-blackglider/issues
+* With diagnostic: `just help-me` (pre-fills context)

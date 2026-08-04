@@ -1,0 +1,22 @@
+;; SPDX-License-Identifier: MPL-2.0
+;; Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <j.d.a.jewell@open.ac.uk>
+;;
+;; Guix channel definition for SR-71 BlackGlider
+;;
+;; To use this channel, add to ~/.config/guix/channels.scm:
+;;
+;;   (channel
+;;     (name 'SR-71 BlackGlider)
+;;     (url "https://github.com/metadatastician/SR-71 BlackGlider")
+;;     (branch "main"))
+;;
+;; Then: guix pull
+
+(channel
+  (version 0)
+  (url "https://github.com/metadatastician/SR-71 BlackGlider")
+  (dependencies
+   (channel
+     (name 'guix)
+     (url "https://git.savannah.gnu.org/git/guix.git")
+     (branch "master"))))

@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (metadatastician)
+= AI-assisted installation — SR-71 BlackGlider
+:toc:
+
+== Status
+
+SR-71 BlackGlider is presently a local, proof-bearing foundation in the
+Metadatastician estate. There is no released application to install. These
+instructions prepare a development checkout and must not be represented as a
+playable release.
+
+When the canonical remote has been provisioned, obtain it with:
+
+[source,bash]
+----
+git clone https://github.com/metadatastician/sr71-blackglider.git
+cd sr71-blackglider
+mise trust
+just test
+just quality
+----
+
+For the current local estate checkout, begin at:
+
+[source,bash]
+----
+cd /home/hyperpolymath/developer/meta-repos/sr71-blackglider
+just test
+just quality
+----
+
+[[ai-implementation]]
+== AI implementation protocol
+
+An AI assistant must read, in order:
+
+. `0-AI-MANIFEST.a2ml`
+. `.machine_readable/descriptiles/CLADE.a2ml`
+. `.machine_readable/descriptiles/anchors/ANCHOR.a2ml`
+. `.machine_readable/descriptiles/AGENTIC.a2ml`
+. `.machine_readable/descriptiles/ECOSYSTEM.a2ml`
+. `.machine_readable/descriptiles/STATE.a2ml`
+. `MATHEMATICAL-CONTRACT.md`
+. `VERIFICATION.md`
+
+It must preserve the one-way authority boundary: presentation may observe the
+canonical world but cannot change it. It must not add a heading assignment,
+player-cell mutation, post-launch stamping, splicing, variable neighbourhood or
+physics-bearing visual metric.
+
+Any new physical claim requires executable evidence in the verification ledger.
+A red claim remains red; gates must not be weakened to accept an implementation.
+
+== Privacy
+
+The project requires no personal data, telemetry, cloud account or uploaded
+prompt history for local development. Do not send source, local paths, mission
+designs or test results to an external AI service unless the maintainer has
+knowingly chosen that service and its privacy terms. Never place credentials,
+tokens, private conversation logs or model session state in the repository.
+
+== Verification
+
+Successful setup means `just test` and `just quality` both exit zero. It does not
+mean the wider project is playable or release-ready; consult `VERIFICATION.md`
+for the exact claims currently earned.
+

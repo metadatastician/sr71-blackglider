@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: MPL-2.0
+
+[metadata]
+project = "sr71-blackglider"
+ecosystem = "metadatastician"
+
+[position]
+type = "interactive-experience"
+purpose = "Advance the Stealth Glider line to a single uncompromised Conway spacetime with proof-bearing geometric flight presentation."
+what-this-is-not = [
+  "an F22 project or a rename of another aircraft",
+  "a Conway-shaped sprite moved by conventional flight controls",
+  "a three-dimensional cellular automaton",
+  "a claim that coordinate curvature changes canonical causality",
+]
+
+[pipeline]
+position = "third Stealth Glider investigation"
+chain = "f19-stealth-glider -> f117a-stealth-glider -> sr71-blackglider"
+notes = "Carries forward load-bearing substrate, counterfactual causality and presentation separation while removing the pre-contact kinematic player seam."
+coordination = "metadatastician"
+
+[related-projects]
+projects = [
+  { name = "f19-stealth-glider", relationship = "conceptual predecessor", notes = "Established substrate interaction, phase and causal TRACE." },
+  { name = "f117a-stealth-glider", relationship = "conceptual predecessor", notes = "Added radar and a proven-inert 3D camera over the 2D world." },
+  { name = "rsr-template-repo", relationship = "repository template", notes = "Canonical RSR scaffold from which this repository was minted." },
+]

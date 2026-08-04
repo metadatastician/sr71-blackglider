@@ -1,0 +1,198 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= SR-71 BlackGlider Component Readiness Assessment
+
+*Standard:* link:https://github.com/metadatastician/standards/tree/main/component-readiness-grades[Component Readiness Grades (CRG) v2.0 STRICT] +
+*Assessed:* 2026-08-03 +
+*Assessor:* Claude (rescue workup), evidence from local gate runs +
+*Previous assessment:* none
+
+*Current Grade:* E
+
+This line is parsed by `just crg-grade` / `just crg-badge`. The grade above is
+the worst-graded in-scope component — *the project's weakest link sets its
+grade*. See the per-component table in §3.
+
+[NOTE]
+====
+*Honest grading.* Per CRG v2.0 Principle 4: grade as-is today, not
+aspirationally. Long alpha is discipline, not shame. Demote immediately if
+evidence doesn't support the claim.
+====
+
+'''
+
+== 1. CRG v2.0 Grade Reference
+
+[cols="1,2,2,3,2", options="header"]
+|===
+| Grade | Name | Release Stage | Stability Posture | Shorthand
+
+| X | Untested              | —         | —                      | —
+| F | Harmful / Wasteful    | —         | —                      | reject/delegate
+| E | Minimal / Salvageable | Pre-alpha | Unstable               | `pre-alpha`
+| D | Partial / Inconsistent| Alpha     | Unstable               | `alpha-unstable`
+| C | Self-Validated        | Alpha     | Stable in home context | `alpha-stable`
+| B | Broadly Validated     | Beta      | Stable for broad trial | `beta-stable`
+| A | Field-Proven          | Stable    | Stable                 | `stable`
+|===
+
+*Evidence gates (v2.0 is stricter than v1.0):*
+
+* *D*: RSR-compliant + per-capability tests + documented scope. Test matrix
+  must cite counts and live in `.machine_readable/descriptiles/STATE.a2ml` or CI.
+* *C*: All of D, plus active dogfooding in home context with *no known
+  home-context failures over an evidence window*, plus *deep per-file and
+  per-directory annotation* (purpose, boundaries, invariants,
+  execution/test/proof surfaces, per-directory orientation READMEs).
+  STATE.a2ml `[dogfooding-status]` populated with concrete "done — <evidence>"
+  entries.
+* *B*: All of C, plus *six genuinely diverse external targets* with
+  feedback fed back. STATE.a2ml `[external-targets]` holds target identities
+  + dates + outcomes; `[issues-fed-back]` holds the closed-issue trail.
+  Internal-capability items do *not* count.
+* *A*: All of B, plus multi-source real-world external feedback confirming
+  value, no harm in the wild. STATE.a2ml `[field-signal]` populated.
+
+*Publication gate:* non-abstract implementation claims require *B+*.
+Below B, any publication must be explicitly abstract or provisional.
+
+'''
+
+== 2. Headline Evidence (as of 2026-08-03, all gates run locally)
+
+[cols="2,3,3", options="header"]
+|===
+| Metric | Value | Source
+
+| Test count | 12/12 green (6 foundation C1–C7 + 6 constitutional C8–C13) | `cargo test --all-targets`, 2026-08-03
+| Formal-verification posture | 2 gated Idris2 modules compile (`%default total`, 0 `believe_me`); 5 quarantined known-broken per MANIFEST | `bash scripts/check-proofs.sh idris2`, 2026-08-03
+| Dangerous patterns (`assert_total`, `unsafeCoerce`, unsafe Rust) | 0 in gated proofs; crate is `#![forbid(unsafe_code)]` | grep 2026-08-03
+| Per-unit README coverage | Not measured (C-gate work; see §4) | —
+| CI status | Never run — repo pushed 2026-08-03 into the estate-wide Actions `startup_failure` outage; all verification local | `.github/workflows/`
+| RSR mandatory workflows | 27 present, 0 ever executed | `.github/workflows/`
+| Third-party badges (if any) | None minted (SonarCloud project, OpenSSF BP not registered) | external
+| LIVE deployment (if any) | None | —
+|===
+
+'''
+
+== 3. Component Assessment
+
+All components graded *as-is today*, per CRG v2.0 Principle 4. Stability
+posture reflects the component's state *within its home context only*
+unless noted.
+
+[cols="2,1,1,3,3,2", options="header"]
+|===
+| Component | Grade | Posture | Evidence Summary | Promotion blocker | Last Assessed
+
+| Rust B3/S23 kernel + certificates (`src/life.rs`, `glider.rs`, `embedding.rs`, `certificate.rs`, ~970 LOC) | D | alpha-unstable | 12/12 exhaustive tests green: 512/512 local rules, 65,536/65,536 4×4 oracle worlds, 240-gen Snark trace, C1–C13 | Dogfooding window + per-file/per-directory annotation (D→C gate) | 2026-08-03
+| Idris2 constitutional companion (`verification/proofs/idris2/BlackGlider/Constitution.idr`) | D | alpha-unstable | Compiles total & constructive under MANIFEST gate; wired into `just test` | Same C gate as kernel; also extend beyond current equation set | 2026-08-03
+| Idris2 ABI proof set (`verification/proofs/idris2/ABI/`, 4 of 5 modules quarantined) | E | pre-alpha | Only Foreign.idr compiles; Layout/Platform/Pointers/Compliance quarantined with recorded reasons | Fix Data.Nat imports + the two genuine unification failures, un-quarantine | 2026-08-03
+| Zig FFI scaffold (`src/interface/ffi/`) | E | pre-alpha | `zig build` exits 0 (zig 0.16.0); no test step; not wired into `just test` | Add tests, wire into golden path — or remove the scaffold until the seam is needed | 2026-08-03
+|===
+
+The presentation/gameplay layer (the actual flight experience) does not exist
+yet and is therefore not an in-scope component; STATE.a2ml records the project
+at 25% complete. It enters this table when its first code lands.
+
+*Rules of thumb for populating this table:*
+
+* One row per independently-gradable unit. If a subsystem can ship or break
+  independently, it gets its own row.
+* Evidence Summary must cite *numbers* (test counts, LOC, file counts) or
+  *paths* (e.g. `src/interface/Abi/Module.idr`), never vague claims.
+* Promotion blocker must be *actionable* — "add external consumer in home
+  context, then annotate" beats "needs more validation".
+* Re-assess every release cycle; date-stamp each row.
+
+'''
+
+== 4. What's Needed for D → C
+
+CRG v2.0 requires two new pieces of evidence on top of D:
+
+. *Active dogfooding in home context with no known home-context failures.*
+** Start date: not started (no dogfood-log entries yet).
+** Home context: authoring and replaying genuine Conway missions through the
+   kernel and certificates — i.e. using the foundation to build the game it
+   exists for.
+** "No known failures" is a moving claim — must hold continuously across
+   the evidence window (recommended: 4 weeks, daily use).
+** Populate `STATE.a2ml [dogfooding-status]` with one entry per capability:
+   `capability = "done — <concrete evidence>"`.
+
+. *Deep code and folder annotation.*
+** Per-directory orientation READMEs in every non-trivial source subtree.
+** Per-file header comments: purpose, boundaries, invariants,
+   execution/test/proof surface.
+** Per-unit (cartridge/panel/plugin/module) README covering: purpose,
+   tools, architecture-at-a-glance, build steps. Overview-level alone is
+   not sufficient — depth is required where a reviewer would otherwise
+   have to read source to orient.
+
+*Minimum first-ring targets for C promotion:* list the trunk components
+here. If these aren't C, nothing else can be.
+
+'''
+
+== 5. What's Needed for C → B
+
+Six *genuinely diverse* external targets with feedback fed back into the
+component. Candidate diversity axes:
+
+* Different language runtime (not just variants of the same one).
+* Different OS family (at least one must not be Linux).
+* Different hardware class (cloud / server / desktop / embedded / mobile).
+* Different auth posture (unauthenticated, API-key, vault-brokered, mTLS).
+* Different topology (star, mesh, peer-to-peer).
+* Different trust model (same-org, federated, adversarial).
+
+Populate `STATE.a2ml`:
+
+* `[external-targets]` — target-id → `"<date> — <outcome> — <contact/URL>"`.
+* `[issues-fed-back]` — issue-id → `"<date> — <external reporter> — <resolution>"`.
+
+Six variations of the same use case do *not* count. Re-classify any items
+currently under `[grade-b-status]` (legacy) and move external-eligible ones
+into `[external-targets]`.
+
+'''
+
+== 6. What's Needed for B → A
+
+Real-world external feedback confirming value. Populate
+`STATE.a2ml [field-signal]` with multi-source entries:
+
+* External users beyond the six B-targets.
+* Third-party writeups, talks, papers, or testimonials.
+* No unresolved safety / correctness incidents in the last 90 days.
+
+'''
+
+== 7. Summary (2026-08-03)
+
+* Project grade: *E*. Why: the weakest in-scope components (Zig FFI scaffold,
+  quarantined ABI proof set) fail the D evidence gate (no per-capability
+  tests). The kernel and constitutional companion are individually at D with
+  strong exhaustive evidence — the project is a proven foundation, not yet a
+  product.
+* Delta since last assessment: first assessment.
+* Next milestone: E→D by either testing-and-wiring or removing the Zig FFI
+  scaffold, and resolving or formally descoping the quarantined ABI modules.
+* Machine-readable grade line present (§ header) for `just crg-grade` / `just crg-badge`.
+
+'''
+
+== 8. Companion Artefacts
+
+* `docs/governance/CRG-CRITERIA.adoc` — grade definitions (boilerplate).
+* `docs/governance/CRG-AUDIT-<DATE>.adoc` — formal audit (populate from
+  `sr71-blackglider/docs/governance/CRG-AUDIT-TEMPLATE.adoc`).
+* `docs/practice/DOGFOOD-LOG.adoc` — dated dogfood evidence (required for C).
+* `.machine_readable/descriptiles/STATE.a2ml` — authoritative state (canonical keys
+  `[dogfooding-status]`, `[external-targets]`, `[issues-fed-back]`,
+  `[field-signal]`).
+
+_Run `just crg-badge` to generate the shields.io badge for your README._

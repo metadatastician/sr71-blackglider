@@ -1,0 +1,120 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// Template: rsr-template-repo/docs/status/PROOF-STATUS.adoc
+// Tracks proof completion. Requirements defined in PROOF-NEEDS.adoc
+= Proof Status — SR-71 BlackGlider
+
+== Summary
+
+Two ledgers are tracked here and must not be conflated:
+
+. *Formal (Idris2)* — the machine-checked constitutional companion, gated by
+  `verification/proofs/idris2/MANIFEST` and verified by
+  `bash scripts/check-proofs.sh idris2`.
+. *Executable exhaustion (Rust)* — finite-domain proofs by exhaustive check
+  (`tests/foundation.rs` C1–C7, `tests/constitutional.rs` C8–C13), verified by
+  `cargo test`. These are complete over their stated finite domains (all 512
+  local rule configurations; all 65,536 4×4 worlds against an independent
+  oracle) but are not formal proofs over unbounded domains. See
+  `PROOF-ROADMAP.md` for exactly what each one establishes.
+
+[cols="2,1,1,1,1,1", options="header"]
+|===
+| Category | Total | Done | In Progress | Blocked | Remaining
+
+| ABI/FFI (ABI) | 5 | 1 | 0 | 4 | 4
+| Typing (TP) | 2 | 1 | 0 | 0 | 1
+| Invariant (INV) | 0 | 0 | 0 | 0 | 0
+| Security (SEC) | 0 | 0 | 0 | 0 | 0
+| Concurrency (CONC) | 0 | 0 | 0 | 0 | 0
+| Algorithm (ALG) | 0 | 0 | 0 | 0 | 0
+| Domain (DOM) | 0 | 0 | 0 | 0 | 0
+| *Total* | *7* | *2* | *0* | *4* | *5*
+|===
+
+*Overall*: 2 of 7 Idris2 obligations proven (both gated modules compile,
+`%default total`, no `believe_me` / `assert_total`); the Rust executable
+foundation is 12/12 green (verified 2026-08-03). The README badge
+`status-foundation_proven` refers to this foundation ledger — the
+architectural contract C1–C13 plus the gated constitutional companion — not
+to the quarantined ABI proof set below.
+
+== Proofs Done
+
+[cols="1,3,1,3,1,2", options="header"]
+|===
+| ID | Proof | Prover | File | Date | Verified By
+
+| ABI-4 | FFI foreign export surface compiles total and constructive | Idris2 0.7.0 | verification/proofs/idris2/ABI/Foreign.idr | 2026-08-01 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
+| TP-1 | Project constitutional equations: complete legal B3/S23 centre/count domain, exact chart headings, deterministic evolution, observer exclusion, causal radius | Idris2 0.7.0 | verification/proofs/idris2/BlackGlider/Constitution.idr | 2026-08-01 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
+|===
+
+== Proofs In Progress
+
+[cols="1,3,1,2,1,2", options="header"]
+|===
+| ID | Proof | Prover | Assignee | Started | Blocker
+
+| — | — | — | — | — | —
+|===
+
+== Proofs Blocked
+
+Quarantined in `verification/proofs/idris2/MANIFEST`: known-broken, and the
+gate requires them to KEEP failing (a quarantined module that starts compiling
+is itself a gate failure, forcing the ledger to be updated).
+
+[cols="1,3,2,3", options="header"]
+|===
+| ID | Proof | Blocked By | Notes
+
+| ABI-1 | Non-null pointer proofs (ABI/Pointers.idr) | Design decision | `.nonNull` declared at quantity 0 (erased) yet projected into a value position, plus a unification failure — design decision, not a typo
+| ABI-2 | Memory layout correctness (ABI/Layout.idr) | Missing imports + real failure | Undefined name NonZero (needs Data.Nat); then a genuine unification failure (S ?x vs f .fieldAlignment)
+| ABI-3 | Platform type size proofs (ABI/Platform.idr) | Missing imports | Undefined name LTE (needs Data.Nat); then Undefined name lteRefl
+| ABI-5 | C ABI compliance (ABI/Compliance.idr) | ABI-2, ABI-3 | Depends on quarantined ABI.Layout / ABI.Platform
+|===
+
+`Types.idr` is likewise quarantined (Idris1-era template, has never compiled)
+but carries no obligation ID of its own.
+
+== Proofs Remaining
+
+[cols="1,3,1,1,1,1", options="header"]
+|===
+| ID | Proof | Category | Prover | Priority | Est. Effort
+
+| ABI-1 | Non-null pointer proofs | ABI | Idris2 | P2 | 2h
+| ABI-2 | Memory layout correctness | ABI | Idris2 | P2 | 4h
+| ABI-3 | Platform type size proofs | ABI | Idris2 | P2 | 2h
+| ABI-5 | C ABI compliance | ABI | Idris2 | P2 | 4h
+| TP-2 | Public API type safety | TP | Lean4 | P3 | 4h
+|===
+
+The ABI set is template-inherited scaffolding around the Zig FFI seam; it is
+deprioritised behind the mission-specification work described in
+`PROOF-ROADMAP.md` ("the useful constitutional boundary has been reached;
+further progress requires engineering a small, frozen mission specification").
+
+== Verification Commands
+
+[source,bash]
+----
+# The honest Idris2 gate (MANIFEST-driven; quarantined modules must keep failing)
+bash scripts/check-proofs.sh idris2
+
+# The executable foundation (C1–C13)
+cargo test --all-targets
+
+# Both, plus quality gates — the repo golden path
+just test && just quality
+----
+
+== Changelog
+
+[cols="1,3,1", options="header"]
+|===
+| Date | Change | By
+
+| 2026-04-04 | Initial proof status tracking | Template
+| 2026-08-03 | Filled from ground truth: check-proofs.sh idris2 PASS (2 gated compile, 5 quarantined fail as recorded, 7/7 accounted); cargo test 12/12 | Claude (rescue workup)
+|===

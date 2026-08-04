@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <j.d.a.jewell@open.ac.uk>
+#
+# ANCHOR.a2ml - authoritative anchor for this repository
+
+[metadata]
+version = "1.0.0"
+last-updated = "2026-08-01"
+
+[anchor]
+schema = "hyperpolymath.anchor/1"
+repo = "metadatastician/sr71-blackglider"
+authority = "upstream-canonical"
+
+purpose = [
+  "Define canonical semantics and policy boundaries for this repository.",
+  "Declare what downstream/satellite repos can extend but not redefine.",
+  "Provide a stable golden path and invariant contract for release readiness.",
+]
+
+[identity]
+project = "SR-71 BlackGlider"
+kind = "interactive-experience"
+one-sentence = "A mathematically uncompromised flight through Conway's Game of Life, embedding genuine B3/S23 histories as curved, textured spacetime."
+domain = "mathematically faithful cellular-automaton flight"
+
+[semantic-authority]
+policy = "canonical"
+
+owns = [
+  "The single-world B3/S23 fidelity contract",
+  "The distinction between frame manoeuvres and Conway turns",
+  "The reference kernel, causal identity analysis, and spacetime embedding boundary",
+]
+
+[implementation-policy]
+allowed = ["Rust", "Idris2", "Zig", "Scheme", "Shell", "Just", "AsciiDoc", "Markdown"]
+forbidden = ["Node.js", "npm"]
+
+[golden-path]
+smoke-test-command = [
+  "just test",
+  "just quality",
+]
+
+success-criteria = [
+  "Core tests pass",
+  "Quality gates pass",
+  "No unresolved critical security findings",
+]
+
+[satellite-policy]
+must-pin-upstream = true
+must-declare-authority = true
+must-have-anchor = true
+must-have-golden-path = true
+
+[semantic-authority-files]
+language-spec = "MATHEMATICAL-CONTRACT.md"
+formal-proofs = "VERIFICATION.md"
+type-theory = "MATHEMATICAL-CONTRACT.md"
+algorithms = "ARCHITECTURE.md"

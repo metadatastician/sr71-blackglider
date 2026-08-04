@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MPL-2.0
+# Gitleaks config — extends the default ruleset with one surgical allowlist.
+#
+# CLADE.a2ml documents the estate's derived-identity scheme and trips the
+# generic-api-key rule on its januskey worked example ("januskey -> <uuid>" —
+# the word "key" plus a hex-ish value). Neither value is a secret: both are
+# UUIDv5(namespace=URL, "github.com/<owner>/<repo>"), deterministically
+# recomputable by anyone (verified with `uuidgen --sha1 --namespace @url` on
+# 2026-08-03). Allowlist exactly those two values rather than the file or the
+# rule, so a real secret pasted into the same file still fires.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Derived (public, recomputable) UUIDv5 repo identities in CLADE.a2ml"
+regexes = [
+  '''ad26514c-ba53-541e-aee9-d4686911a9a4''',
+  '''e216170e-ff47-5a5c-bbdd-15e61c8190c8''',
+]

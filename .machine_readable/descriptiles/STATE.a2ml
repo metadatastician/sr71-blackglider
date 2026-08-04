@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: MPL-2.0
+
+[metadata]
+project = "sr71-blackglider"
+version = "0.1.0"
+last-updated = "2026-08-01"
+status = "active"
+
+[project-context]
+name = "SR-71 BlackGlider"
+purpose = "A mathematically uncompromised flight through Conway's Game of Life, embedding genuine B3/S23 histories as curved, textured spacetime."
+completion-percentage = 25
+
+[position]
+phase = "implementation"
+maturity = "experimental"
+
+[route-to-mvp]
+milestones = [
+  { name = "Mathematical contract and RSR repository foundation", completion = 100 },
+  { name = "Exact B3/S23 kernel and proof-oriented test harness", completion = 100 },
+  { name = "Genuine reflected turn and causal identity experiment", completion = 100 },
+  { name = "Constitutional proof companion and bounded fidelity certificates", completion = 100 },
+  { name = "Production curved-surface renderer", completion = 10 },
+  { name = "Life-native mission and control semantics", completion = 0 },
+  { name = "Playable, reproducibly built artefact", completion = 0 },
+]
+
+[blockers-and-issues]
+issues = [
+  "Template-wide placeholder and optional RSR modules still require project-specific pruning or configuration.",
+  "No machine-checked refinement currently connects the Idris2 model to the Rust implementation or compiled executable.",
+]
+
+[critical-next-actions]
+actions = [
+  "Design player agency entirely through initial conditions and genuine Life signals.",
+  "Specify a finite first mission before extending proofs beyond the constitutional kernel.",
+  "Build the production surface renderer without adding a reverse dependency into the kernel.",
+  "Define a finite mission with explicit boundary-clear proof intervals.",
+]
+
+[maintenance-status]
+last-run-utc = "2026-08-01"
+last-result = "warn"
+open-warnings = 1
+open-failures = 0
+
+[ecosystem]
+part-of = ["Metadatastician estate", "Stealth Glider line", "RSR Framework"]
+depends-on = []

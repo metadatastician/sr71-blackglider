@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MPL-2.0
+
+[tools]
+rust = "1.97.0"
+just = "1.56.0"
+
+[env]
+CARGO_TERM_COLOR = "always"
+
+[tasks.test]
+run = "cargo test --all-targets"
+
+[tasks.quality]
+run = "cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --all-targets"
+

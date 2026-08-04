@@ -1,0 +1,188 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (metadatastician)
+= SR-71 BlackGlider
+:toc:
+:toc-placement: preamble
+
+image:https://img.shields.io/badge/Code-MPL--2.0-blue.svg?logo=mozilla[Code licence: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
+image:https://img.shields.io/badge/Docs-CC--BY--SA--4.0-blue.svg?logo=creativecommons[Docs licence: CC-BY-SA-4.0,link="https://creativecommons.org/licenses/by-sa/4.0/"]
+image:https://img.shields.io/badge/RSR-Rhodium_Standard-9C27B0[Rhodium Standard Repository,link="https://github.com/hyperpolymath/rhodium-standard-repositories"]
+image:https://img.shields.io/badge/status-foundation_proven-blue[Foundation proven]
+
+_Conway evolves the flight. BlackGlider renders the history._
+
+SR-71 BlackGlider is a mathematically uncompromised flight through Conway's
+Game of Life. A single global B3/S23 universe is the whole physical truth.
+Surfaces, textures, altitude, banking and curved spacetime belong to a one-way
+geometric embedding: they may reveal and dramatise Conway's causal history,
+but they may never author it.
+
+[IMPORTANT]
+====
+This repository currently proves the architectural foundation; it is not yet a
+complete game. The executable spike contains an exact B3/S23 kernel, a genuine
+stable-reflector turn, causal counterfactual measurement, and a curved flight
+embedding demonstrated unable to change the canonical history.
+====
+
+== The step forward
+
+This is the third project in a line of increasingly demanding questions about
+what a game can honestly claim when its world is Conway's Life.
+
+[cols="1,2,3"]
+|===
+| Project | Question opened | What SR-71 carries forward
+
+| `F19 Stealth Glider`
+| Can a five-cell glider cross a hostile evolving substrate, with disturbance
+  measured against a counterfactual world?
+| The substrate is computation rather than scenery; phase and causal trace are
+  gameplay truth.
+
+| `F117A Stealth Glider`
+| Can that same evolving world become radar cover, with a 3D flight experience
+  remaining downstream of a 2D cellular automaton?
+| Presentation may become richer without pretending that a different cellular
+  physics exists underneath it.
+
+| `SR-71 BlackGlider`
+| Can surfaces, textures, local frames and apparent spacetime curvature create
+  flight while every objective manoeuvre remains a real Conway reaction?
+| The separation becomes constitutional: no player overlay, no splicing, no
+  imposed heading. There is one global Life history and a proof-bearing observer.
+|===
+
+The change is not merely faster aircraft or more elaborate graphics. F19 and
+F117A admitted a pre-contact kinematic player layer. That layer could reproduce
+straight glider flight exactly, but a commanded heading substitution was not an
+isolated glider's B3/S23 evolution. SR-71 does not inherit that exception.
+
+Its governing proposition is stronger:
+
+[quote]
+____
+For a fixed initial pattern `G₀`, every canonical state is exactly
+`Gₜ = Lifeᵗ(G₀)`, independently of rendering, camera state, textures, spacetime
+embedding and every post-launch user input.
+____
+
+== What has already been proved
+
+The foundation tests currently establish:
+
+* all 512 possible nine-bit local configurations implement exactly B3/S23;
+* the demonstration counterfactual is a stable 49-cell Snark reflector;
+* an incoming NE glider is turned into an outgoing SE glider by raw B3/S23;
+* after recovery, the actual/no-launch difference is exactly the outgoing five
+  cells—no causal ash;
+* aggressively changing bank, pitch and surface curvature produces a canonical
+  history byte-identical to the headless run;
+* the exact 45-degree chart maps Conway NE/SE/SW/NW to BlackGlider
+  up/forward/down/back;
+* a canonical byte encoding replays to the same 240-generation result;
+* every possible 4-by-4 world agrees for one synchronous generation with an
+  independently written finite-grid oracle;
+* all 16 combinations of glider heading and phase are detected and exhibit the
+  correct four-generation translation;
+* presentation inputs have no capability to modify a `World` and remain
+  non-interfering over the exercised histories;
+* an Idris2 companion constructively checks all 18 legal combinations of centre
+  state and Moore-neighbour count against a separately stated B3/S23
+  specification, plus the exact heading map, deterministic iteration, observer
+  exclusion, and declared causal-radius function.
+
+These statements have deliberately different strengths. The Idris2 results are
+formal theorems about the compact model in that file. The Rust results are
+exhaustive over stated finite domains or bounded traces. There is not yet a
+machine-checked refinement proof that the Rust implementation is the Idris2
+model, nor a proof about the compiled executable.
+
+Run the evidence:
+
+[source,bash]
+----
+just test
+just quality
+----
+
+See link:MATHEMATICAL-CONTRACT.md[the mathematical contract],
+link:ARCHITECTURE.md[the one-way architecture], and
+link:VERIFICATION.md[the claim ledger].
+link:PROOF-ROADMAP.md[The proof frontier] states how far verification can
+usefully go before a finite mission must be engineered and frozen.
+
+== Flight geometry
+
+Canonical cell coordinates remain integer lattice coordinates `(x,y)`. The
+initial BlackGlider chart is the exact linear map
+
+[stem]
+++++
+X=(x+y)/2,qquad Y=(x-y)/2.
+++++
+
+The implementation stores the exact doubled coordinates `u=x+y`, `v=x-y` and
+divides only at the raster boundary. Its inverse exists exactly on the
+same-parity sublattice, so no rounding enters the canonical chart.
+
+It re-expresses genuine diagonal Life motion as orthogonal flight directions:
+
+[cols="1,1"]
+|===
+| Conway heading | BlackGlider chart
+| NE | up
+| SE | forward
+| SW | down
+| NW | back
+|===
+
+Later embeddings may curve and texture this chart. They do not redefine the
+Moore neighbourhood. Cells that look close after a fold do not become Conway
+neighbours; cells stretched apart do not cease to be neighbours.
+
+== Turns
+
+There are two deliberately different events:
+
+* A *frame manoeuvre* changes how the same Conway worldline is experienced. The
+  world, not only the aircraft, transforms consistently; mission outcome cannot
+  change.
+* A *Conway turn* changes heading relative to the canonical substrate. It must
+  be found in the raw grid as a real B3/S23 reaction. The foundation uses Mike
+  Playle's stable Snark reflector to demonstrate one such 90-degree turn.
+
+Ailerons, elevons, banking and local curvature may express a detected Conway
+turn. They may never cause one by assigning a heading or moving five cells.
+
+== Repository status
+
+This is an RSR-derived repository in the Metadatastician estate, minted from the
+canonical local `rsr-template-repo` on 2026-08-01. The foundation is green; the
+mission, production renderer, control semantics and playable level remain future
+work. No release or playability claim is made yet.
+
+Its primary estate clade is *`fv` — Formal Verification & Proofs*. That is a
+value-proposition decision: the project's defining work is establishing and
+mechanically defending the equivalence between claimed flight events and an
+uncompromised Conway history. The interactive experience is downstream of that
+proof-bearing contract.
+
+== AI-Assisted Installation
+
+AI assistance is optional and confers no authority to weaken the mathematical
+contract. Humans and agents use the same local golden path: `just test`, then
+`just quality`. `just test` checks both the Rust evidence and every gated Idris2
+module. An assisting agent must read `0-AI-MANIFEST.a2ml`, the
+machine-readable identity and policy files, `MATHEMATICAL-CONTRACT.md`, and
+`VERIFICATION.md` before changing the project. It must not upload code or local
+context to an external service without the maintainer's informed choice.
+
+The complete protocol and privacy boundary are in
+link:docs/AI_INSTALLATION_GUIDE.adoc[the AI-assisted installation guide].
+
+== Licence
+
+Code, configuration and scripts are MPL-2.0. Prose documentation is
+CC-BY-SA-4.0. Per-file SPDX headers are authoritative; licence texts live in
+`LICENSES/`.
