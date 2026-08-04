@@ -25,7 +25,13 @@ extra coverage.
 
 == SAST tools are complementary, not redundant
 
-* `codeql.yml` — CodeQL (matrix defaults to `actions`; every repo has workflows).
+* CodeQL — via GitHub's DEFAULT setup (rust + actions, extended suite), not a
+  workflow file. GitHub auto-enabled default setup at repo creation, and
+  default setup rejects SARIF from an advanced `codeql.yml` ("analyses from
+  advanced configurations cannot be processed when the default setup is
+  enabled") — the advanced workflow scanned `actions` only, so default is
+  strictly more coverage here. Removed 2026-08-04. If default setup is ever
+  disabled, restore `codeql.yml` from history (`bf51869`).
 * `sonarqube.yml` — SonarCloud (shell / JS surface; see `sonar-project.properties`).
 * `static-analysis-gate.yml` — panic-attack + Hypatia gate (see above).
 
