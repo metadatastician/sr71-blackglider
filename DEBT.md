@@ -19,8 +19,29 @@ This file is an **index**, not a replacement. Detailed ledgers live in
 Anything not confirmed by a run is labelled **DIAGNOSIS (unconfirmed)** rather
 than asserted.
 
-**32 items** · L licence · D documentation · C code · P proof · T test ·
-CI continuous integration · SC supply chain
+**37 items in-repo, plus 7 inherited from upstream.**
+
+| Domain | Count |
+|---|---|
+| **L** licence | 4 |
+| **D** documentation | 5 |
+| **C** code | 6 |
+| **P** proof | 6 |
+| **T** test | 4 |
+| **CI** continuous integration | 9 |
+| **SC** supply chain | 3 |
+| *(U upstream — fix belongs in `rsr-template-repo`)* | *7* |
+
+Regenerate this table with:
+
+```console
+$ grep -oE '^### (L|D|C|P|T|CI|SC)-[0-9]+' DEBT.md | sed 's/^### //;s/-[0-9]*$//' | sort | uniq -c
+$ grep -cE '^\| U-[0-9]' DEBT.md
+```
+
+Keeping the count accurate is not bookkeeping pedantry: a register that
+miscounts itself is the same failure mode as a status doc that miscounts the
+tests, which is most of what is listed below.
 
 | Severity | Meaning |
 |---|---|
