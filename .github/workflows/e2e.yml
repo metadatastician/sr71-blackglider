@@ -55,6 +55,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Run E2E harness
+        # E2E_SKIP_PROOFS is set deliberately and names its replacement: the
+        # four proof gates are run by proof-gate.yml, which installs each
+        # toolchain. This job installs none, so it covers the release-mode
+        # build-and-test pipeline only. Without the flag, tests/e2e.sh treats
+        # an absent prover as FATAL under CI — which is the correct default
+        # and is what caught this job running gates it was never equipped for.
+        env:
+          E2E_SKIP_PROOFS: "1"
         run: |
           if [ -f tests/e2e.sh ]; then
             bash tests/e2e.sh

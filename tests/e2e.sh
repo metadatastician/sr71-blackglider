@@ -92,6 +92,23 @@ echo ""
 # so absence is a workflow defect and must be red.
 bold "Section 3: proof gates"
 IN_CI="${CI:-false}"
+
+# E2E_SKIP_PROOFS is an EXPLICIT, caller-declared scoping decision, not a
+# fallback. .github/workflows/e2e.yml sets it because
+# .github/workflows/proof-gate.yml owns proof verification and installs the
+# four toolchains; e2e.yml installs none, so running the gates there would
+# either duplicate that work or (with the CI rule below) fail for a reason
+# that is not about the end-to-end pipeline.
+#
+# The distinction that matters: a caller saying "proofs are gated elsewhere,
+# by name" is accountable; `command -v tool || skip` is not, because nothing
+# records who was supposed to run it. If you set this, you are asserting that
+# another gate covers the proofs — say which one.
+if [ "${E2E_SKIP_PROOFS:-0}" = "1" ]; then
+    yellow "  SCOPED OUT: proof gates are not run here."
+    yellow "              Owner: .github/workflows/proof-gate.yml (one job per prover)."
+    yellow "              Locally, run them with: just test"
+else
 for prover in idris2 coq agda lean4; do
     case "$prover" in
         coq)   tool=coqc ;;
@@ -110,6 +127,7 @@ for prover in idris2 coq agda lean4; do
         skip_test "check-proofs.sh $prover" "$tool not installed locally; 'just test' gates it on a dev machine"
     fi
 done
+fi
 
 # ═══════════════════════════════════════════════════════════════════════
 # Summary

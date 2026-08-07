@@ -19,7 +19,7 @@ This file is an **index**, not a replacement. Detailed ledgers live in
 Anything not confirmed by a run is labelled **DIAGNOSIS (unconfirmed)** rather
 than asserted.
 
-**28 items** · L licence · D documentation · C code · P proof · T test ·
+**32 items** · L licence · D documentation · C code · P proof · T test ·
 CI continuous integration · SC supply chain
 
 | Severity | Meaning |
@@ -387,6 +387,46 @@ it now propagates the real exit code and treats absence as fatal by default.
 ### CI-6 · LOW · `SONAR_TOKEN` unset; SonarCloud project not minted; OpenSSF BP not registered
 `sonarqube.yml` reports itself unconfigured and exits 0 — honest by design.
 The README carries an OpenSSF Best Practices badge with no registered project.
+
+### CI-8 · HIGH · The Hypatia security scan reported "clean" whenever it crashed — and now fails, correctly
+`static-analysis-gate.yml` captured the scanner's exit code into `HYP_EXIT`
+and then never read it (shellcheck SC2034 flagged the variable as unused —
+that warning *was* the bug report). When the scanner produced no parseable
+JSON the step wrote `[]` and continued, so a **crashed scan and a genuinely
+clean scan were indistinguishable**, and the crash was the one that looked
+better.
+
+`HYP_EXIT` is now load-bearing: no parseable JSON *and* a non-zero exit fails
+the step with the scanner's own output. On the first run after the fix, the
+job went **red** — which is the correct, informative outcome and the reason
+the fix was worth making.
+
+**Status:** the *gate* is fixed. The underlying scanner failure is now visible
+and is real, open work.
+
+**Next:** read the failing step's output on the newest `Static Analysis Gate`
+run and fix the scanner invocation (or the Hypatia install) it exposes. Do not
+restore the `[]` fallback.
+
+### CI-9 · MEDIUM · `proof-gate.yml` needed three install fixes on its first real run
+Recorded because the first run is the only honest test of a new gate, and it
+found three separate defects the local runs could not:
+
+* *Agda* — `agda` alone is not enough. `Properties.agda` opens `Data.Nat`,
+  `Data.List` and `Relation.Binary.PropositionalEquality`, all from
+  **agda-stdlib**, a separate package that also needs `~/.agda/libraries`
+  pointed at its `.agda-lib`. The gate ran and failed on the imports: correct
+  behaviour, wrong workflow.
+* *Lean* — `elan-init.sh --default-toolchain none` installs elan but no Lean;
+  the next step died with "no default toolchain configured". Now installs the
+  toolchain **read from `verification/proofs/lean4/lean-toolchain`** so the
+  pin cannot drift from the workflow.
+* *Idris2* — not in the runner image's apt sources at all
+  (`E: Unable to locate package idris2`), and there is no first-party setup
+  action. Now runs in the `ghcr.io/stefan-hoeck/idris2-pack` container.
+
+**Next:** confirm all four jobs green, then require them in branch protection
+(CI-2). Coq passed on the first attempt and needs nothing.
 
 ### CI-7 · LOW · `just test` is now fatal-if-a-prover-is-absent, which makes the golden path heavy
 Contributors need four provers plus Zig to run `just test`. This is deliberate

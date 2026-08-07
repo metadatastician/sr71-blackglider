@@ -108,12 +108,20 @@ jobs:
     timeout-minutes: 25
     permissions:
       contents: read
+    # Idris2 is NOT in the runner image's apt sources — the first attempt at
+    # this job died with "E: Unable to locate package idris2". Idris2 has no
+    # first-party setup action either, and building it from source needs a
+    # Chez Scheme bootstrap (~10 min per run). The community-standard answer
+    # for Idris2 CI is the pack image, which ships the compiler and the
+    # package manager ready to use.
+    #
+    # Tag-pinned, not digest-pinned — a deliberate, recorded exception to the
+    # estate's pinning rule, which is written for GitHub Actions rather than
+    # container images. Tracked as DEBT SC-1 alongside the elan installer.
+    container:
+      image: ghcr.io/stefan-hoeck/idris2-pack:latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Install Idris2
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y idris2
       - name: Record toolchain version
         run: idris2 --version
       # The SHIPPED seam, checked as a package. src/interface/Abi/ is what the
@@ -150,10 +158,21 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Install Agda
+      - name: Install Agda + standard library
+        # agda-stdlib is a SEPARATE package and Properties.agda cannot compile
+        # without it — it opens Data.Nat, Data.Nat.Properties, Data.List,
+        # Data.List.Properties and Relation.Binary.PropositionalEquality.
+        # Installing `agda` alone got the gate to run and then fail on the
+        # imports, which is the gate behaving correctly and the workflow being
+        # wrong. Agda also needs its library registry pointed at the stdlib
+        # .agda-lib; the Debian package installs it under /usr/share.
         run: |
           sudo apt-get update
-          sudo apt-get install -y agda
+          sudo apt-get install -y agda agda-stdlib
+          mkdir -p "$HOME/.agda"
+          find /usr/share -name 'standard-library.agda-lib' 2>/dev/null | head -1 > "$HOME/.agda/libraries"
+          echo 'standard-library' > "$HOME/.agda/defaults"
+          echo "libraries file:"; cat "$HOME/.agda/libraries"
       - name: Record toolchain version
         run: agda --version
       - name: check-proofs.sh agda
@@ -173,10 +192,19 @@ jobs:
         # GitHub Actions, and is recorded as supply-chain debt SC-1 in DEBT.md:
         # the toolchain version itself is pinned by verification/proofs/lean4/
         # lean-toolchain, so what is unpinned is the installer, not the prover.
+        #
+        # The toolchain installed is the one PINNED by
+        # verification/proofs/lean4/lean-toolchain, read from the file rather
+        # than restated here so the two cannot drift. Passing
+        # `--default-toolchain none` (as this step first did) installs elan but
+        # no Lean at all, and the very next step died with "no default
+        # toolchain configured" — the gate correctly refusing to pretend.
         run: |
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             -o elan-init.sh
-          sh elan-init.sh -y --default-toolchain none
+          TOOLCHAIN="$(tr -d '[:space:]' < verification/proofs/lean4/lean-toolchain)"
+          echo "Installing pinned toolchain: $TOOLCHAIN"
+          sh elan-init.sh -y --default-toolchain "$TOOLCHAIN"
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Record toolchain version
         run: lean --version
