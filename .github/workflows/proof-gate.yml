@@ -166,13 +166,37 @@ jobs:
         # imports, which is the gate behaving correctly and the workflow being
         # wrong. Agda also needs its library registry pointed at the stdlib
         # .agda-lib; the Debian package installs it under /usr/share.
+        #
+        # Registration is the fiddly half. Debian/Ubuntu register the stdlib
+        # system-wide in /etc/agda/libraries, which Agda does NOT read — it
+        # reads $AGDA_DIR/libraries, defaulting to ~/.agda/libraries. A first
+        # attempt that only searched /usr/share wrote an EMPTY libraries file
+        # and the gate reported, correctly and usefully:
+        #     Library 'standard-library' not found. ... Installed libraries: (none)
+        # So: take the packaged registry if it exists, and also locate the
+        # .agda-lib directly via dpkg, which is authoritative about where the
+        # package actually put it. Diagnostics are printed unconditionally so a
+        # future failure is readable from the log alone.
         run: |
           sudo apt-get update
           sudo apt-get install -y agda agda-stdlib
           mkdir -p "$HOME/.agda"
-          find /usr/share -name 'standard-library.agda-lib' 2>/dev/null | head -1 > "$HOME/.agda/libraries"
+          : > "$HOME/.agda/libraries"
+          if [ -f /etc/agda/libraries ]; then
+            echo "found packaged registry /etc/agda/libraries:"
+            cat /etc/agda/libraries
+            cat /etc/agda/libraries >> "$HOME/.agda/libraries"
+          fi
+          dpkg -L agda-stdlib 2>/dev/null | grep '\.agda-lib$' >> "$HOME/.agda/libraries" || true
+          sort -u -o "$HOME/.agda/libraries" "$HOME/.agda/libraries"
           echo 'standard-library' > "$HOME/.agda/defaults"
-          echo "libraries file:"; cat "$HOME/.agda/libraries"
+          echo "--- ~/.agda/libraries ---"; cat "$HOME/.agda/libraries"
+          echo "--- .agda-lib files on disk ---"
+          dpkg -L agda-stdlib 2>/dev/null | grep '\.agda-lib$' || echo "(dpkg listed none)"
+          test -s "$HOME/.agda/libraries" || {
+            echo "::error::agda-stdlib installed but no .agda-lib could be registered."
+            exit 1
+          }
       - name: Record toolchain version
         run: agda --version
       - name: check-proofs.sh agda
