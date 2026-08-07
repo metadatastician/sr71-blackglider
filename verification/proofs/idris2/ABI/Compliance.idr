@@ -49,11 +49,11 @@ record CABICompliant (layout : StructLayout) where
   constructor MkCompliant
   fieldsAligned  : AllFieldsAligned (layoutFields layout)
   fieldsInBounds : AllFieldsInBounds (layoutSize layout) (layoutFields layout)
-  sizeAligned    : (NonZero (layoutAlignment layout), (k ** layoutSize layout = k * layoutAlignment layout))
+  sizeAligned    : (NonZeroAlign (layoutAlignment layout), (k ** layoutSize layout = k * layoutAlignment layout))
 
 ||| An empty struct is trivially compliant (size=1, alignment=1; 1 = 1 * 1).
 ||| The obligation is real, not decorative: substituting `(2 ** Refl)` for
 ||| `(1 ** Refl)` is rejected, because `1 = 2 * 1` does not reduce.
 export
 emptyStructCompliant : CABICompliant (MkLayout "empty" [] 1 1)
-emptyStructCompliant = MkCompliant AFANil AFBNil (SIsNonZero, (1 ** Refl))
+emptyStructCompliant = MkCompliant AFANil AFBNil (IsNonZeroAlign, (1 ** Refl))

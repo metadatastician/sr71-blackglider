@@ -68,9 +68,22 @@ record StructField where
 ||| certificate for a size-0/alignment-0 struct that cannot exist in C.
 ||| Requiring `NonZero` closes the corner and restores the ordering the
 ||| comment originally claimed.
+||| A local, self-contained "this Nat is not zero" witness.
+|||
+||| Deliberately NOT `Data.Nat.NonZero`. `FieldAligned` is `public export`, so
+||| every name in its right-hand side must be `public export` too — and
+||| `Data.Nat.NonZero`'s visibility differs between Idris2 builds. It compiles
+||| against idris2 0.7.0 locally and fails in the `idris2-pack` CI image with
+||| "Data.Nat.NonZero is not accessible in this context". Depending on another
+||| library's export annotation for a one-constructor predicate buys nothing
+||| and costs portability, so the predicate lives here.
+public export
+data NonZeroAlign : Nat -> Type where
+  IsNonZeroAlign : NonZeroAlign (S n)
+
 public export
 FieldAligned : StructField -> Type
-FieldAligned f = (NonZero (fieldAlignment f), (k ** fieldOffset f = k * fieldAlignment f))
+FieldAligned f = (NonZeroAlign (fieldAlignment f), (k ** fieldOffset f = k * fieldAlignment f))
 
 ||| Proof that a field does not overflow past a given struct size.
 public export

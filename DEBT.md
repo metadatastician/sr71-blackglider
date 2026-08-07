@@ -364,10 +364,25 @@ The MANIFESTs were ground-truthed against idris2 0.7.0, coqc 8.20.1, Agda
 2.6.4.3, Lean 4.32.2. `apt` may ship different versions. Each job prints
 `--version` first so a drift failure is diagnosable from the log.
 
-**DIAGNOSIS (unconfirmed):** `apt` may not carry `idris2` at all on the runner
-image, in which case that job fails at install. That failure is *correct*
-behaviour — a gate that cannot run must not report OK — but it needs a real
-run to confirm and a follow-up to fix.
+**CONFIRMED 2026-08-07, and it found a real portability defect.** `apt` does
+not carry `idris2` on the runner image at all (`E: Unable to locate package
+idris2`); the job now uses the `idris2-pack` container. With that in place the
+gate ran and *failed on a genuine difference between builds*:
+
+```console
+Error: While processing right hand side of FieldAligned.
+       Data.Nat.NonZero is not accessible in this context.
+```
+
+`FieldAligned` is `public export`, so every name in its right-hand side must be
+`public export` too — and `Data.Nat.NonZero`'s visibility differs between the
+local idris2 0.7.0 and the image's build. Fixed by declaring a local
+one-constructor `NonZeroAlign` predicate in `ABI/Layout.idr` instead of
+borrowing one whose export annotation this repo does not control. The
+alignment-0 attack is still rejected and legal layouts still prove.
+
+**This is the value of running a gate in a second environment**: a proof that
+compiles on one machine is not a portable proof, and only CI could show it.
 
 ### CI-4 · MEDIUM · Receipt and generated-file drift is caught by nothing
 `just validate-coapt` fails on a clean tree (the committed coaptation receipt
