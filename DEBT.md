@@ -19,7 +19,7 @@ This file is an **index**, not a replacement. Detailed ledgers live in
 Anything not confirmed by a run is labelled **DIAGNOSIS (unconfirmed)** rather
 than asserted.
 
-**37 items in-repo, plus 7 inherited from upstream.**
+**38 items in-repo, plus 7 inherited from upstream.**
 
 | Domain | Count |
 |---|---|
@@ -28,7 +28,7 @@ than asserted.
 | **C** code | 6 |
 | **P** proof | 6 |
 | **T** test | 4 |
-| **CI** continuous integration | 9 |
+| **CI** continuous integration | 10 |
 | **SC** supply chain | 3 |
 | *(U upstream — fix belongs in `rsr-template-repo`)* | *7* |
 
@@ -463,6 +463,47 @@ found three separate defects the local runs could not:
 
 **Next:** confirm all four jobs green, then require them in branch protection
 (CI-2). Coq passed on the first attempt and needs nothing.
+
+### CI-10 · MEDIUM · The Agda job is RED: Ubuntu's `agda-stdlib` ships no `.agda-lib`
+The only proof job still failing, and left red deliberately rather than
+softened. Measured on the runner (`ubuntu-24.04`, Agda 2.6.3):
+
+```console
+$ dpkg -L agda-stdlib | grep '\.agda-lib$'
+(nothing)
+$ cat ~/.agda/libraries
+(empty)
+# and from the gate itself:
+Library 'standard-library' not found. ... Installed libraries: (none)
+```
+
+`apt-get install agda agda-stdlib` succeeds and installs Agda 2.6.3, but the
+package registers no `.agda-lib`, so Agda cannot resolve
+`standard-library` — which `Properties.agda` needs for `Data.Nat`,
+`Data.Nat.Properties`, `Data.List`, `Data.List.Properties` and
+`Relation.Binary.PropositionalEquality`. Neither `/etc/agda/libraries` nor a
+`dpkg -L` lookup produced a path.
+
+This is a *packaging* problem, not a repository problem — and it is worth
+noting the gate behaved correctly throughout: it refused to pass, said exactly
+what was missing, and told us where to register it.
+
+**Why it stays red:** the alternative is a skip, and a skipped Agda gate is
+indistinguishable from a passing one — the precise defect CI-1 was raised to
+remove. Red-and-recorded beats green-and-lying. Nothing is required to merge
+(CI-2), so this blocks no one.
+
+**Next:** stop using `apt` for the stdlib. Fetch a tagged `agda-stdlib`
+release matching the Agda on the runner (2.6.3 pairs with the v1.7.x line),
+unpack it, and write its `standard-library.agda-lib` path into
+`~/.agda/libraries`. Pin the release tag. Alternatively pin Agda itself via
+`haskell-actions/setup` (already SHA-pinned in this repo) and build the stdlib
+from a pinned tag.
+
+**Value note, so this is prioritised honestly:** `Properties.agda` is a
+template exemplar (it proves `length (xs ++ ys) ≡ length xs + length ys`) — see
+P-1. Getting this job green raises CI *hygiene*, not assurance about Conway
+physics. It sits below P-1 and P-2 in real importance.
 
 ### CI-7 · LOW · `just test` is now fatal-if-a-prover-is-absent, which makes the golden path heavy
 Contributors need four provers plus Zig to run `just test`. This is deliberate
