@@ -58,12 +58,14 @@ jobs:
           MEDIUM=$(jq '[.[] | select(.severity == "medium")] | length' panic-attack-findings.json 2>/dev/null || echo 0)
           LOW=$(jq '[.[] | select(.severity == "low")] | length' panic-attack-findings.json 2>/dev/null || echo 0)
 
-          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
-          echo "critical=$CRITICAL" >> "$GITHUB_OUTPUT"
-          echo "high=$HIGH" >> "$GITHUB_OUTPUT"
-          echo "medium=$MEDIUM" >> "$GITHUB_OUTPUT"
-          echo "low=$LOW" >> "$GITHUB_OUTPUT"
-          echo "exit_code=$PA_EXIT" >> "$GITHUB_OUTPUT"
+          {
+            echo "total=$TOTAL"
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"
+            echo "medium=$MEDIUM"
+            echo "low=$LOW"
+            echo "exit_code=$PA_EXIT"
+          } >> "$GITHUB_OUTPUT"
       - name: Emit check annotations
         if: steps.install.outputs.installed == 'true'
         run: |
@@ -95,9 +97,11 @@ jobs:
         if: steps.install.outputs.installed != 'true'
         run: |
           echo "[]" > panic-attack-findings.json
-          echo "## panic-attack assail" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: panic-attack not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## panic-attack assail"
+            echo ""
+            echo "Skipped: panic-attack not available in this environment."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload panic-attack findings
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -163,6 +167,13 @@ jobs:
           set -e
 
           if [ ! -s hypatia-findings.json ] || ! jq empty hypatia-findings.json 2>/dev/null; then
+            # No parseable JSON came back. If the scanner ALSO exited non-zero it
+            # crashed — fail loudly instead of depositing a falsely-clean "[]".
+            if [ "$HYP_EXIT" -ne 0 ]; then
+              echo "::error::Hypatia scanner exited $HYP_EXIT and produced no parseable JSON — the scan did not run"
+              cat hypatia-findings.json || true
+              exit "$HYP_EXIT"
+            fi
             echo "[]" > hypatia-findings.json
           fi
 
@@ -172,11 +183,13 @@ jobs:
           MEDIUM=$(jq '[.[] | select(.severity == "medium")] | length' hypatia-findings.json 2>/dev/null || echo 0)
           LOW=$(jq '[.[] | select(.severity == "low")] | length' hypatia-findings.json 2>/dev/null || echo 0)
 
-          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
-          echo "critical=$CRITICAL" >> "$GITHUB_OUTPUT"
-          echo "high=$HIGH" >> "$GITHUB_OUTPUT"
-          echo "medium=$MEDIUM" >> "$GITHUB_OUTPUT"
-          echo "low=$LOW" >> "$GITHUB_OUTPUT"
+          {
+            echo "total=$TOTAL"
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"
+            echo "medium=$MEDIUM"
+            echo "low=$LOW"
+          } >> "$GITHUB_OUTPUT"
       - name: Emit check annotations
         if: steps.build.outputs.ready == 'true'
         run: |
@@ -207,9 +220,11 @@ jobs:
         if: steps.build.outputs.ready != 'true'
         run: |
           echo "[]" > hypatia-findings.json
-          echo "## Hypatia Scan" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: Hypatia scanner not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Hypatia Scan"
+            echo ""
+            echo "Skipped: Hypatia scanner not available in this environment."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload hypatia findings
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -255,6 +270,13 @@ jobs:
           set -e
 
           if [ ! -s bridge-report.json ] || ! jq empty bridge-report.json 2>/dev/null; then
+            # No parseable JSON came back. If the tool ALSO exited non-zero it
+            # crashed — fail loudly instead of depositing a falsely-empty report.
+            if [ "$PB_EXIT" -ne 0 ]; then
+              echo "::error::Patch Bridge exited $PB_EXIT and produced no parseable JSON — the triage did not run"
+              cat bridge-report.json || true
+              exit "$PB_EXIT"
+            fi
             echo '{"cves":[],"mitigated":0,"unmitigable":0,"concatenative":0,"informational":0}' > bridge-report.json
           fi
 
@@ -263,10 +285,12 @@ jobs:
           CONCATENATIVE=$(jq '.concatenative // 0' bridge-report.json)
           INFORMATIONAL=$(jq '.informational // 0' bridge-report.json)
 
-          echo "unmitigable=$UNMITIGABLE" >> "$GITHUB_OUTPUT"
-          echo "mitigated=$MITIGATED" >> "$GITHUB_OUTPUT"
-          echo "concatenative=$CONCATENATIVE" >> "$GITHUB_OUTPUT"
-          echo "informational=$INFORMATIONAL" >> "$GITHUB_OUTPUT"
+          {
+            echo "unmitigable=$UNMITIGABLE"
+            echo "mitigated=$MITIGATED"
+            echo "concatenative=$CONCATENATIVE"
+            echo "informational=$INFORMATIONAL"
+          } >> "$GITHUB_OUTPUT"
       - name: Write step summary
         if: steps.install.outputs.installed == 'true'
         run: |
@@ -288,9 +312,11 @@ jobs:
         if: steps.install.outputs.installed != 'true'
         run: |
           echo '{"cves":[],"mitigated":0,"unmitigable":0,"concatenative":0,"informational":0}' > bridge-report.json
-          echo "## Patch Bridge CVE Triage" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Skipped: panic-attack not available in this environment." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Patch Bridge CVE Triage"
+            echo ""
+            echo "Skipped: panic-attack not available in this environment."
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload bridge report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -378,11 +404,13 @@ jobs:
           MEDIUM=$(jq '[.findings[] | select(.severity == "medium")] | length' findings/unified-findings.json)
           LOW=$(jq '[.findings[] | select(.severity == "low")] | length' findings/unified-findings.json)
 
-          echo "total=$TOTAL"       >> "$GITHUB_OUTPUT"
-          echo "critical=$CRITICAL" >> "$GITHUB_OUTPUT"
-          echo "high=$HIGH"         >> "$GITHUB_OUTPUT"
-          echo "medium=$MEDIUM"     >> "$GITHUB_OUTPUT"
-          echo "low=$LOW"           >> "$GITHUB_OUTPUT"
+          {
+            echo "total=$TOTAL"
+            echo "critical=$CRITICAL"
+            echo "high=$HIGH"
+            echo "medium=$MEDIUM"
+            echo "low=$LOW"
+          } >> "$GITHUB_OUTPUT"
       - name: Upload unified findings (fleet scanner picks these up)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

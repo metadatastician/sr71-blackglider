@@ -1,0 +1,184 @@
+# SPDX-License-Identifier: MPL-2.0
+# proof-gate.yml — run the gates that actually bind this project's claims.
+#
+# WHY THIS FILE EXISTS
+# --------------------
+# Before 2026-08-07 NO workflow in this repository invoked scripts/check-proofs.sh,
+# `just test`, `just proof-check-all`, or the Zig FFI tests. Verified:
+#     grep -rn 'check-proofs\|proof-check\|just test' .github/workflows/   # -> no hits
+# The only CI path that touched the proofs was e2e.yml -> tests/e2e.sh, whose
+# prover loop was wrapped in `command -v <tool> || skip`, and no workflow
+# installed any prover. On a bare runner that scored PASS=0 FAIL=0 SKIP=4 and
+# exited 0. Meanwhile the repository declared seven Idris2 modules, one Coq,
+# one Agda and one Lean module "gated", and rust-ci (a caller of the standards
+# reusable) checked only cargo. Every proof and every Zig test was enforced on
+# one laptop and nowhere else.
+#
+# So: one job per prover, each of which INSTALLS its toolchain and then runs the
+# MANIFEST-driven gate. Jobs are separate rather than a matrix step so that a
+# failure to install Agda cannot mask the Coq result, and so the job name that
+# goes red names the prover that broke.
+#
+# check-proofs.sh treats an absent toolchain as FATAL by design ("a gate that
+# cannot run must never report OK"), so a broken install surfaces as a red job
+# rather than a green skip. That is the intended behaviour: fix the install.
+#
+# TOOLCHAIN VERSION DRIFT is a known, accepted risk and is recorded in DEBT.md
+# (CI-3). The MANIFESTs were ground-truthed against idris2 0.7.0, coqc 8.20.1,
+# Agda 2.6.4.3 and Lean 4.32.2; distribution packages here may differ. A
+# version-induced failure is a real signal about proof portability, not noise —
+# do not paper over it with a skip.
+name: Proof Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'verification/**'
+      - 'src/**'
+      - 'abi.ipkg'
+      - 'scripts/check-proofs.sh'
+      - 'scripts/scan-dangerous.sh'
+      - 'tests/**'
+      - 'Justfile'
+      - '.github/workflows/proof-gate.yml'
+  pull_request:
+    paths:
+      - 'verification/**'
+      - 'src/**'
+      - 'abi.ipkg'
+      - 'scripts/check-proofs.sh'
+      - 'scripts/scan-dangerous.sh'
+      - 'tests/**'
+      - 'Justfile'
+      - '.github/workflows/proof-gate.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Cross-cutting checks that need no prover: SPDX coverage and the
+  # dangerous-construct scan (believe_me / sorry / Admitted / postulate ...).
+  # ---------------------------------------------------------------------------
+  aspects:
+    name: Aspect tests (SPDX + dangerous constructs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run aspect tests
+        run: bash tests/aspect_tests.sh
+
+  # ---------------------------------------------------------------------------
+  # Zig FFI seam. build.zig previously declared no steps at all, so `zig build`
+  # exited 0 having compiled nothing and three genuine compile errors in
+  # src/interface/ffi/src/main.zig went unseen for the life of the template.
+  # ---------------------------------------------------------------------------
+  zig-ffi:
+    name: Zig FFI tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
+        with:
+          version: 0.16.0
+      - name: zig build test
+        working-directory: src/interface/ffi
+        run: zig build test --summary all
+
+  # ---------------------------------------------------------------------------
+  # One job per prover. Each installs its toolchain, prints the version it
+  # actually got (so a drift-induced failure is diagnosable from the log alone),
+  # then runs the MANIFEST-driven gate.
+  # ---------------------------------------------------------------------------
+  idris2:
+    name: Idris2 proof gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Idris2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y idris2
+      - name: Record toolchain version
+        run: idris2 --version
+      # The SHIPPED seam, checked as a package. src/interface/Abi/ is what the
+      # Zig FFI is written against, and check-proofs.sh's MANIFEST coverage
+      # rule only scans verification/proofs/idris2 — so until 2026-08-07 the
+      # one Idris2 artefact with a downstream consumer was ungated.
+      - name: Typecheck the shipped ABI package
+        run: idris2 --typecheck abi.ipkg
+      - name: check-proofs.sh idris2
+        run: bash scripts/check-proofs.sh idris2
+
+  coq:
+    name: Coq proof gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Coq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y coq
+      - name: Record toolchain version
+        run: coqc --version
+      - name: check-proofs.sh coq
+        run: bash scripts/check-proofs.sh coq
+
+  agda:
+    name: Agda proof gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Agda
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y agda
+      - name: Record toolchain version
+        run: agda --version
+      - name: check-proofs.sh agda
+        run: bash scripts/check-proofs.sh agda
+
+  lean4:
+    name: Lean4 proof gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Lean via elan
+        # elan is fetched over TLS from the upstream release. This is a
+        # deliberate exception to the SHA-pinning rule, which applies to
+        # GitHub Actions, and is recorded as supply-chain debt SC-1 in DEBT.md:
+        # the toolchain version itself is pinned by verification/proofs/lean4/
+        # lean-toolchain, so what is unpinned is the installer, not the prover.
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            -o elan-init.sh
+          sh elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Record toolchain version
+        run: lean --version
+      - name: check-proofs.sh lean4
+        run: bash scripts/check-proofs.sh lean4

@@ -5,48 +5,157 @@
 Rewritten 2026-08-03 from measured runs. The previous content was the RSR
 template's own test ledger (Zig `main.zig`, `integration_test.zig`, template
 instantiation E2E, "CRG C achieved") inherited verbatim at mint — it described
-rsr-template-repo, not this project. Every count below comes from an observed
-local run on 2026-08-03; per the lesson recorded in the old file, tick boxes
-from observed output only.
+rsr-template-repo, not this project.
 
-== Current State (measured 2026-08-03)
+Updated 2026-08-07 after the proof/gate workup. The framing of the 2026-08-03
+rewrite stands: *tick boxes from observed output only*. Every count below was
+re-measured by running the tool in this working tree on 2026-08-07; nothing here
+is quoted from another status document.
+
+== Current State (measured 2026-08-07)
 
 [cols="2,1,4", options="header"]
 |===
 | Category | Count | Details
 
-| *Exhaustive kernel tests* | 12 | `tests/foundation.rs` (C1–C7) + `tests/constitutional.rs` (C8–C13); 512/512 local rules, 65,536/65,536 4×4 oracle worlds, 240-gen Snark trace. 12/12 green, debug and release.
-| *Formal proofs (Idris2)* | 2 gated / 5 quarantined | `verification/proofs/idris2/MANIFEST`, verified by `scripts/check-proofs.sh idris2` (quarantined modules must KEEP failing). Wired into `just test`.
-| *Formal proofs (Coq)* | 1 | `verification/proofs/coq/TypeSafety.v` — compiles clean under coqc 8.20.1, 1 Qed, zero admits. *UNWIRED* — no gate runs it.
-| *E2E tests* | 1 harness, 3 sections | `tests/e2e.sh`: release build → release-mode C1–C13 → proof gate (SKIPs loudly without idris2). Run by `.github/workflows/e2e.yml`.
-| *Aspect tests* | 3 | `tests/aspect_tests.sh`: SPDX coverage, dangerous Idris2 patterns, dangerous proof patterns (statement-form matching; comment-prose false positives fixed 2026-08-03). 3/3 green.
-| *Workflow tests* | 1 | `tests/workflows/validate_workflows_test.sh` — green.
+| *Exhaustive kernel tests* | 12 | `tests/foundation.rs` (C1–C7) + `tests/constitutional.rs` (C8–C13). 12/12 pass. 512/512 local B3/S23 rule configurations, 65,536/65,536 4×4 worlds against an independent oracle, a 240-generation Snark reflector trace. These are proofs *by exhaustion over a stated finite domain*, not formal proofs over unbounded domains. `src/lib.rs` defines *zero* unit tests. 613 LOC of Rust source, 357 LOC of tests; crate is `#![forbid(unsafe_code)]` with zero external dependencies.
+| *Formal proofs (Idris2)* | 7 gated / 0 quarantined | `scripts/check-proofs.sh idris2` PASS, all 7 `.idr` files under `verification/proofs/idris2` accounted for by MANIFEST. The quarantine is now *empty*: the five previously-quarantined ABI modules were repaired and promoted. Wired into `just test` and `.github/workflows/proof-gate.yml`.
+| *Formal proofs (shipped ABI seam)* | 3 modules | `idris2 --typecheck abi.ipkg` PASS over `src/interface/Abi/{Types,Layout,Foreign}.idr`. This is the seam the Zig FFI is written against, and it is *outside* check-proofs.sh's MANIFEST scope — so it is gated separately, by name, in `just test` and in proof-gate.yml.
+| *Formal proofs (Coq)* | 1 gated | `scripts/check-proofs.sh coq` PASS, coqc 8.20.1. *WIRED* as of 2026-08-07. But see NEED-1: `TypeSafety.v` is a verbatim RSR template exemplar (a toy STLC: `Inductive ty`/`expr`/`has_type`/`eval`, one `type_soundness` theorem). It proves nothing about Conway physics.
+| *Formal proofs (Agda)* | 1 gated | `scripts/check-proofs.sh agda` PASS, Agda 2.6.4.3. *WIRED* as of 2026-08-07. Also a template exemplar: `append-length`, `Monotone`/`Idempotent` records, `suc-monotone`. See NEED-1.
+| *Formal proofs (Lean4)* | 1 gated / 0 quarantined | `scripts/check-proofs.sh lean4` PASS, Lean 4.32.2. `ApiTypes.lean` was quarantined and is now repaired and gated. Also a template exemplar: `ApiResult` functor laws + `BoundedNat`. See NEED-1.
+| *Formal specs (TLA+)* | 1 file, 0 checked | `verification/proofs/tlaplus/StateMachine.tla` exists and is *checked by nothing*. `scripts/check-proofs.sh` accepts only `idris2\|lean4\|agda\|coq`; the only thing in the repo that touches the directory is `build/just/proofs.just:52`, which runs `find … \| wc -l` — it counts files, it does not check them. No TLA+/TLC toolchain is installed. It is also an uninstantiated template modelling a generic request pipeline (`idle`/`scanning`/`routing`/`dispatching`), unrelated to this project. See NEED-2.
+| *Zig FFI tests* | 11 | `cd src/interface/ffi && zig build test --summary all` → 11/11 tests pass, 5/5 steps. 3 inline unit tests in `src/main.zig`, 8 integration tests in `test/integration_test.zig`. Wired into `just test` and proof-gate.yml. Previously `build.zig` declared *no steps*, so `zig build` exited 0 having compiled nothing and hid three genuine compile errors.
+| *E2E tests* | 1 harness, 3 sections | `tests/e2e.sh`: release build → release-mode C1–C13 → proof gate. Run by `.github/workflows/e2e.yml`. Its prover loop is `command -v <tool> \|\| skip`; on a runner with no provers installed that scores PASS=0 FAIL=0 SKIP=4 and exits 0. proof-gate.yml is the workflow that actually binds the provers.
+| *Aspect tests* | 2 | `tests/aspect_tests.sh`: SPDX header coverage, dangerous-construct scan (via `scripts/scan-dangerous.sh`). Measured PASS=2 FAIL=0 WARN=0. This is *down from the 3 recorded on 2026-08-03*: the third arm grepped `src/abi/`, a path that has never existed in this repo, so it could only ever pass. Two real aspects replace three, one of which was vacuous.
+| *Workflow tests* | 1 | `tests/workflows/validate_workflows_test.sh` — PASS, 0 errors, 4 recommendations.
+| *Structure validator* | 1, green, off the golden path | `scripts/validate-template.sh` (422 lines) now exits 0 (0 errors, 5 warnings) and is wired to `just validate-structure` / `just validate`. It is *not* in `just test`, not in `just quality`, and not in any workflow — `grep` over `.github/workflows/` finds no caller. Repaired and reachable, but still not enforced. See NEED-5.
 | *Fuzz tests* | 0 | `tests/fuzz/README.adoc` scaffold only; no harness.
-| *Zig FFI tests* | 0 | `src/interface/ffi/build.zig` builds; no test step; not wired into `just test`.
+| *Benchmarks* | 0 | `benches/template_bench.sh` times an RSR template file that no longer exists and discards every exit code. `just bench` and `just readiness` now exit 1 as honestly unimplemented rather than echo success. See NEED-4.
+| *Mission / renderer tests* | 0 | The presentation/renderer layer and the mission semantics *do not exist yet*. `STATE.a2ml` records 25% complete.
 |===
 
-== Needs (priority order)
+=== Toolchain the above was measured on
 
-. *Wire or descope the Coq proof* — TypeSafety.v compiles but nothing runs
-  it; either add a `check-proofs.sh coq` mode with its own MANIFEST or move
-  it under an explicitly-unwired examples note. Unwired is not done.
-. *Zig FFI test step* — `zig build test` target plus wiring into `just test`,
-  or remove the scaffold until the FFI seam is actually consumed (this is
-  also the READINESS E→D promotion blocker).
-. *Fuzz harness* — a `cargo-fuzz` target over `Life::step` input worlds would
-  exercise the kernel beyond the exhaustive finite domains (low priority:
-  the 4×4 domain is already complete, so fuzzing adds value only at larger
-  world sizes).
-. *Mission-specification tests* — blocked on the frozen mission spec
-  (PROOF-ROADMAP): once a mission exists, its replay certificates become
-  golden-file tests.
+cargo 1.97.1 / rustc 1.97.1 / Idris2 0.7.0 / Coq 8.20.1 / Agda 2.6.4.3 /
+Lean 4.32.2 / zig 0.16.0 / just 1.56.0.
+
+== Closed since 2026-08-03
+
+The two top-priority needs of the previous revision are *discharged*, verified
+by running the gates rather than by reading a manifest:
+
+* *Wire or descope the Coq proof* — DONE. `check-proofs.sh` grew `coq`, `agda`
+  and `lean4` modes with their own MANIFESTs. All three pass. Note this closes
+  the *wiring* need only; the *content* need it exposed is NEED-1 below.
+* *Zig FFI test step* — DONE. `zig build test` exists, runs 11 tests, and is a
+  dependency of `just test` and of the `zig-ffi` job in proof-gate.yml.
+
+Also closed, though not previously listed as needs: before 2026-08-07 *no*
+workflow ran any proof gate, the Zig tests, or `just test` — verified by
+`grep -rn 'check-proofs\|proof-check\|just test' .github/workflows/` returning
+no hits. `.github/workflows/proof-gate.yml` now runs the aspect tests, the Zig
+FFI tests, `idris2 --typecheck abi.ipkg`, and one job per prover, each
+installing its own toolchain. The gate script treats an absent toolchain as
+fatal, so a broken install goes red rather than green-by-skip.
+
+== Needs (priority order, 2026-08-07)
+
+[[NEED-1]]
+. *Replace the Coq / Agda / Lean template exemplars with domain content* —
+  this is now the largest single overstatement risk in the repo. All three
+  compile, all three are gated, and *all three are verbatim RSR template
+  stubs*: a toy simply-typed lambda calculus (Coq), list-append length and
+  monotonicity records (Agda), a `Result` functor and a bounded natural
+  (Lean). Their green says the prover ran; it does not say anything about
+  Conway physics, the chart, or the glider. The Idris2 MANIFEST is already
+  honest about this for `Types.idr` ("template examples, honest ones"); the
+  Coq, Agda and Lean MANIFEST notes say only "compiles", which is true but
+  reads as more than it is. Either give each a real obligation from
+  PROOF-NEEDS, or move them under an explicitly-labelled `examples/` root that
+  no readiness claim may cite. Until then: *three green gates, zero domain
+  coverage between them.*
+
+[[NEED-2]]
+. *Wire or delete the TLA+ spec* — `StateMachine.tla` is checked by nothing
+  (`check-proofs.sh` has no `tlaplus` mode) and models an unrelated generic
+  request pipeline. Two honest routes: instantiate it against something real
+  in this project and add a TLC mode to the gate (which also means installing
+  a TLA+ toolchain and pinning it), or delete the file and drop the TLA+
+  row from PROOF-NEEDS. Keeping an unchecked uninstantiated template in
+  `verification/proofs/` is exactly the shape that gets miscounted as coverage.
+
+[[NEED-3]]
+. *A machine-checked refinement from the Idris2 model to the Rust kernel* —
+  there is none. The proofs and the implementation are verified *separately*
+  and nothing establishes that they agree. Concretely: the Idris2 ABI modules
+  prove properties of a *model* of a C ABI, not of the shipped Zig FFI —
+  `grep -rn 'CABICompliant\|StructLayout' --include='*.zig' --include='*.rs' .`
+  returns nothing, so no Rust or Zig struct is ever presented to the
+  compliance certificate, and the only inhabitant is a fieldless empty struct.
+  The same gap holds for `Constitution.idr`, whose own header states it "does
+  not claim refinement of the Rust implementation". Smallest useful step:
+  generate `StructLayout` values from the actual FFI types so the certificate
+  has real inhabitants.
+
+[[NEED-4]]
+. *Benchmarks and the readiness suite are unimplemented, and now say so* —
+  `just bench` and `just readiness` exit 1 with an explanation instead of
+  echoing success. That is the correct state, not the finished state: they
+  were dependencies of `test-all`, which therefore printed "safe to merge"
+  partly on the strength of two echoes. `test-all` is now `test e2e aspect`
+  only. Restore them as dependencies *only* when they do real work — a
+  `cargo bench` target over `Life::step`, and an executable CRG assessment.
+  Tracked as DEBT T-3.
+
+[[NEED-5]]
+. *Enforce `scripts/validate-template.sh`* — it is repaired (exit 0, 5
+  warnings) and reachable via `just validate`, but nothing in CI and nothing
+  on the golden path (`just test && just quality`) calls it. A validator that
+  passes where no one is looking is one commit away from being red where no
+  one is looking. Either add it to `just quality` or give it a workflow job.
+
+[[NEED-6]]
+. *Pin the prover toolchains in `mise.toml`* — `mise.toml` pins rust, just and
+  zig only. `just test` now treats an absent prover as *fatal*, so any of
+  idris2 / coq / agda / lean4 going missing or drifting breaks the golden path
+  with no pinned version to fall back to. The CI jobs install from distro
+  packages and elan, whose versions may differ from the 0.7.0 / 8.20.1 /
+  2.6.4.3 / 4.32.2 the MANIFESTs were ground-truthed against. Accepted risk,
+  recorded as DEBT CI-3; pinning would retire it.
+
+[[NEED-7]]
+. *Mission-specification tests* — still blocked on the frozen mission spec
+  (`PROOF-ROADMAP.md` names it the next real step). Once a mission exists, its
+  replay certificates become golden-file tests. Unchanged from 2026-08-03.
+
+[[NEED-8]]
+. *Fuzz harness* — a `cargo-fuzz` target over `Life::step` input worlds.
+  Low priority and unchanged: the 4×4 domain is already exhaustively covered,
+  so fuzzing adds value only at larger world sizes.
+
+[[NEED-9]]
+. *Reconcile or retire `.gitlab-ci.yml`* — it declares "Primary CI/CD —
+  GitLab is the source of truth", but `git remote -v` shows exactly one
+  remote, `origin` on GitHub, and the file covers none of the proofs, none of
+  Zig, and no `just` recipe. A CI configuration for a forge this repo does not
+  push to cannot be the source of truth for anything.
 
 == Verification Commands
 
 [source,bash]
 ----
-just test && just quality        # golden path
-bash tests/e2e.sh                # release-mode pipeline
-bash tests/aspect_tests.sh       # cross-cutting invariants
+just test && just quality                        # golden path
+cargo test --all-targets                         # 12 kernel obligations
+cd src/interface/ffi && zig build test --summary all
+idris2 --typecheck abi.ipkg                      # the SHIPPED ABI seam
+bash scripts/check-proofs.sh idris2              # and coq | agda | lean4
+bash tests/e2e.sh                                # release-mode pipeline
+bash tests/aspect_tests.sh                       # cross-cutting invariants
 bash tests/workflows/validate_workflows_test.sh
+just validate                                    # incl. validate-structure
 ----
+
+Note what these commands do *not* cover: the TLA+ spec (no mode exists), the
+renderer and mission layers (no code exists), and agreement between the Idris2
+model and the Rust kernel (no mechanism exists).

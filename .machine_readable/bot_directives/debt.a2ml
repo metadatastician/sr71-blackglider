@@ -6,44 +6,323 @@
 # Becomes the next session's Phase 0 input.
 #
 # Reference: ADR-002 in standards/agentic-a2ml/docs/
+#
+# This is the MACHINE-READABLE mirror of DEBT.md at the repository root.
+# DEBT.md is authoritative for prose, evidence commands and severity rationale;
+# every entry here carries the same ID so the two can be reconciled mechanically.
+# When you fix an item, remove it HERE and mark it in DEBT.md — do not let the
+# two drift.
+#
+# Populated 2026-08-07 from a full audit. It was previously empty except for
+# commented examples, which meant "no known debt" — a claim nobody had checked.
 
 [metadata]
-version = "1.0.0"
-last-updated = "2026-08-01"
-
-# ============================================================================
-# DEBT ITEMS
-# ============================================================================
-# Each item has: component, issue, effort (easy|medium|hard), impact (high|medium|low),
-# priority (should|could), and discovered date.
-#
-# Items are consumed (removed) when fixed. New items are added at session end.
-# The debt list prevents the "one more wave" loop — found things are persisted,
-# not forgotten, and not used as justification for infinite meandering.
+version = "1.1.0"
+last-updated = "2026-08-07"
+source-of-truth = "DEBT.md"
+audit-method = "every item reproduced by a command; see DEBT.md for the command"
+total-items = 28
 
 # ============================================================================
 # SHOULD — would fix next wave
 # ============================================================================
-# These are inputs for the next session if the user says "keep going".
-#
-# Example:
-# [[debt.should]]
-# component = "system-tools/monitoring/observatory"
-# issue = "Stale duplicate of root observatory/"
-# effort = "easy"
-# impact = "medium"
-# discovered = "2026-03-23"
+
+[[debt.should]]
+id = "L-1"
+component = "LICENSES/AGPL-3.0-or-later.txt"
+issue = "An AGPL licence text ships in a repo that bans AGPL in four places (deny.toml, AGENTIC.a2ml, copilot-instructions, rhodibot). `reuse lint` reports it as an unused licence."
+effort = "easy"
+impact = "high"
+priority = "should"
+owner-only = true   # doctrine 6: no automated licence edits, ever
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "C-1"
+component = "scripts/validate-template.sh"
+issue = "410-line validator is ungated AND currently red: it requires codeql.yml, deliberately deleted in ce52d18 when GitHub default CodeQL setup took over. Only caller is a benchmark that discards the exit code."
+effort = "easy"
+impact = "high"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "P-1"
+component = "verification/proofs/{coq,agda,lean4}"
+issue = "Three of the four prover suites are verbatim RSR template exemplars (toy type system, list-append length, Result functor). They compile and are gated, but prove nothing about Conway physics. Highest over-reading risk in the repo."
+effort = "hard"
+impact = "high"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "P-2"
+component = "verification/proofs/idris2 <-> src"
+issue = "No machine-checked refinement connects the Idris2 constitution to the Rust kernel. A model/implementation divergence would leave both ledgers green."
+effort = "hard"
+impact = "high"
+priority = "should"
+discovered = "2026-08-01"   # standing; predates this audit
+
+[[debt.should]]
+id = "CI-2"
+component = ".github/settings.yml"
+issue = "Nothing is required to merge: contexts is empty and probot/settings is not installed (branch protection returns 404). Every gate is advisory. Add proof-gate job names one at a time, each verified present in check-runs BEFORE requiring it."
+effort = "medium"
+impact = "high"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "CI-3"
+component = ".github/workflows/proof-gate.yml"
+issue = "New workflow installs provers from distribution packages; versions may drift from the ground-truthed set (idris2 0.7.0, coqc 8.20.1, Agda 2.6.4.3, Lean 4.32.2). DIAGNOSIS (unconfirmed): apt may not carry idris2 on the runner image."
+effort = "medium"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "CI-4"
+component = ".machine_readable/coaptation/receipts/latest.a2ml"
+issue = "`just validate-coapt` fails on a clean tree (committed receipt is stale). Neither it nor `just validate-claude-md` runs in CI or a hook, so generated-file drift is found by hand."
+effort = "easy"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "P-4"
+component = "verification/proofs/tlaplus/StateMachine.tla"
+issue = "Unwired by every gate (check-proofs.sh supports only idris2|lean4|agda|coq, no MANIFEST, no toolchain) AND models a generic request pipeline unrelated to this project. Deleting is the honest default."
+effort = "easy"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "D-3"
+component = ".gitlab-ci.yml"
+issue = "Declares itself 'Primary CI/CD — GitLab is the source of truth' but there is no GitLab remote, so it has never run; it also covers none of the proofs, Zig, or just."
+effort = "easy"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "C-2"
+component = "benches/template_bench.sh"
+issue = "Times tests/e2e/template_instantiation_test.sh, which no longer exists (silently skipped since the e2e harness was re-instantiated, banner still prints). Every timed command ends `|| true`, so a broken subject is timed as a fast success."
+effort = "easy"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "C-3"
+component = "src/interface/ffi"
+issue = "The Zig FFI exports generic handle/buffer scaffolding, not a Conway surface — no world, no generation, no glider — and nothing in the Rust kernel calls it. It now compiles and has 11 passing tests, which is not the same as being used."
+effort = "hard"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "P-3"
+component = "verification/proofs/idris2/ABI"
+issue = "The ABI modules prove properties of a MODEL of a C ABI: grep finds no CABICompliant/StructLayout reference outside verification/proofs, and the only inhabitant is a fieldless empty struct. Must not be quoted as 'the C ABI is proven compliant'."
+effort = "hard"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "L-2"
+component = "REUSE compliance"
+issue = "`reuse lint` fails: 224 of 453 tracked files carry copyright information. Fix via dep5 blanket paragraphs, NOT a blind header sweep — an estate incident mis-licensed files by inserting a header above an existing one."
+effort = "medium"
+impact = "medium"
+priority = "should"
+owner-only = true
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "CI-5"
+component = "panic-attack / just assail / static-analysis-gate.yml"
+issue = "panic-attack executes on neither side: absent locally (hook degrades to a loud skip) and the CI installer does not resolve. Publish or vendor a resolvable install, or drop the gate."
+effort = "medium"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "SC-1"
+component = ".github/workflows/proof-gate.yml"
+issue = "Lean is installed via an unpinned `curl | sh` from elan master — a deliberate exception to the Actions SHA-pinning rule. The toolchain is pinned by lean-toolchain; the INSTALLER is not."
+effort = "medium"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
+
+[[debt.should]]
+id = "T-3"
+component = "Justfile"
+issue = "No benchmark suite and no readiness suite exist. `just bench` and `just readiness` were echo-only stubs printing success while `just test-all` depended on both; they now exit 1 as unimplemented and were removed from test-all."
+effort = "medium"
+impact = "medium"
+priority = "should"
+discovered = "2026-08-07"
 
 # ============================================================================
 # COULD — would fix eventually
 # ============================================================================
-# These are low-priority items that don't justify a session on their own.
-# They get picked up when an agent is in the area for other reasons.
-#
-# Example:
-# [[debt.could]]
-# component = "cicada"
-# issue = "RSR_OUTLINE.adoc references banned AGPL-3.0"
-# effort = "easy"
-# impact = "low"
-# discovered = "2026-03-23"
+
+[[debt.could]]
+id = "C-5"
+component = "mise.toml"
+issue = "Pins rust/just/zig but not the four prover toolchains that `just test` now treats as fatal-if-absent — a reproducibility gap in the golden path itself."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "T-2"
+component = "src/lib.rs"
+issue = "Zero unit tests; all 12 tests are integration tests, so internal invariants are exercised only through the public surface."
+effort = "medium"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "T-4"
+component = "tests/fuzz"
+issue = "No fuzz harness (README scaffold only). Lower value than it appears: the 4x4 domain is already exhaustive, so fuzzing adds value only at larger world sizes."
+effort = "medium"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "C-4"
+component = "Justfile"
+issue = "`just doctor` cannot fail and its 'No hardcoded paths' branch is unreachable (grep succeeding means paths WERE found). Acceptable for a diagnostic, but the [FAIL] labels imply gating that does not happen."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "CI-7"
+component = "Justfile"
+issue = "`just test` now requires four provers plus Zig, raising the barrier to a first contribution. Consider a clearly-labelled `just test-fast` cargo+zig subset that is explicitly NOT the golden path."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "CI-6"
+component = "sonarqube.yml / README badges"
+issue = "SONAR_TOKEN unset and SonarCloud project not minted; OpenSSF Best Practices badge present with no registered project."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "L-3"
+component = "README.adoc"
+issue = "The dual-licence split (code MPL-2.0 / docs CC-BY-SA-4.0) is correct and both texts are used, but nothing at the root states it; a reader seeing LICENSE may assume MPL governs the prose."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "D-4"
+component = "docs/wikis/README.adoc"
+issue = "Predates the GitHub wiki, which was empty until 2026-08-07. Cross-check now that pages exist."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "D-5"
+component = "docs/{theory,whitepapers,governance}/**"
+issue = "~20 template README.adoc stubs describing what could live there. Correctly-labelled scaffolding, but they inflate the apparent documentation surface. Keep or prune — decide once."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "P-6"
+component = "src"
+issue = "%default total is enforced in the Idris2 proofs, but the Rust kernel has no termination argument beyond bounded loops."
+effort = "hard"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+[[debt.could]]
+id = "T-1"
+component = "tests"
+issue = "Exhaustion is over FINITE domains (512/512 rules, 65,536/65,536 4x4 worlds) and must never be read as general proof. Nothing establishes behaviour on larger worlds beyond the 240-generation Snark trace. Keep the domain stated wherever the numbers appear."
+effort = "easy"
+impact = "low"
+priority = "could"
+discovered = "2026-08-07"
+
+# ============================================================================
+# UPSTREAM — inherited defects, fix belongs in rsr-template-repo
+# ============================================================================
+# Confirmed present at hyperpolymath/rsr-template-repo live main (c250e66) on
+# 2026-08-07 against a fresh clone. No open issue or PR covers any of them (all
+# 23 issues/PRs ever filed were enumerated). Every repo minted from that
+# template inherits all seven. Filing them is an outward-facing action on
+# another repository and is the owner's call — deliberately not done here.
+
+[[debt.upstream]]
+id = "U-1"
+component = "rsr-template-repo:src/interface/ffi/build.zig"
+issue = "Declares no build steps: `zig build` exits 0 having compiled nothing; `zig build test` errors 'no step named test'. This is what hid U-2 for the life of the template."
+discovered = "2026-08-07"
+
+[[debt.upstream]]
+id = "U-2"
+component = "rsr-template-repo:src/interface/ffi/src/main.zig"
+issue = "Does not compile — three defects: opaque type declared with fields; std.heap.c_allocator without link_libc; callconv(.C) renamed to .c in Zig 0.16."
+discovered = "2026-08-07"
+
+[[debt.upstream]]
+id = "U-3"
+component = "rsr-template-repo:scripts/check-no-placeholders.sh"
+issue = "Dies at exit 1 with ZERO output in any remoteless checkout (git worktree, fresh clone before remote add): `git config --get` exits 1 under `set -euo pipefail`, killing the script before it scans a single file. Piped to `tail`, it reads as a pass."
+discovered = "2026-08-07"
+
+[[debt.upstream]]
+id = "U-4"
+component = "rsr-template-repo:verification/proofs/lean4/ApiTypes.lean"
+issue = "Binder named `max` never auto-binds because max is a global function in Lean 4; the module has never compiled."
+discovered = "2026-08-07"
+
+[[debt.upstream]]
+id = "U-5"
+component = "rsr-template-repo:verification/proofs/idris2/ABI"
+issue = "All five Idris2 ABI modules still quarantined upstream; repaired only in this minted repo."
+discovered = "2026-08-07"
+
+[[debt.upstream]]
+id = "U-6"
+component = "rsr-template-repo:tests/e2e.sh"
+issue = "Runs the template's own instantiation smoke test, which requires `just` on the runner and tests the wrong subject in every minted repo."
+discovered = "2026-08-07"
+
+[[debt.upstream]]
+id = "U-7"
+component = "rsr-template-repo:.github/workflows"
+issue = "Upstream CI runs neither `zig build test` nor any proof gate — green but blind to U-1 through U-6."
+discovered = "2026-08-07"

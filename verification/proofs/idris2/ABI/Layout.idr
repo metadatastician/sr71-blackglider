@@ -7,6 +7,8 @@
 
 module ABI.Layout
 
+import Data.Nat
+
 %default total
 
 ||| Witness that a type has a known size in bytes at compile time.
@@ -44,9 +46,31 @@ record StructField where
   fieldAlignment : Nat
 
 ||| Proof that a field is correctly aligned within a struct.
+|||
+||| Stated as divisibility — a non-zero alignment, plus a witness `k` with
+||| `offset = k * alignment` — rather than
+||| `modNatNZ offset alignment SIsNonZero = 0`. The mod phrasing was the
+||| recorded quarantine reason: `SIsNonZero : NonZero (S n)` only unifies
+||| with a literal successor, and an arbitrary `fieldAlignment f` is not
+||| syntactically `S n` ("Can't solve constraint between: S ?x and
+||| f .fieldAlignment"). Divisibility is constructive, needs no literal, and
+||| is what C alignment actually means. It also matches the SHIPPED seam:
+||| `src/interface/Abi/Layout.idr` already states alignment as `Divides`.
+|||
+||| The `NonZero` conjunct is NOT decoration. Without it this predicate is
+||| strictly WEAKER than the mod phrasing at alignment 0: `(0 ** Refl)`
+||| proves `FieldAligned (MkField "z" 0 8 0)`, certifying a field whose
+||| alignment is zero — whereas the mod phrasing could not even be FORMED
+||| at alignment 0, and in a total type theory unformable means uninhabited,
+||| i.e. stronger. An earlier revision of this comment claimed the opposite
+||| ("strictly stronger at alignment 0"); that was exactly backwards, and an
+||| adversarial review caught it by building a complete `CABICompliant`
+||| certificate for a size-0/alignment-0 struct that cannot exist in C.
+||| Requiring `NonZero` closes the corner and restores the ordering the
+||| comment originally claimed.
 public export
 FieldAligned : StructField -> Type
-FieldAligned f = modNatNZ (fieldOffset f) (fieldAlignment f) SIsNonZero = 0
+FieldAligned f = (NonZero (fieldAlignment f), (k ** fieldOffset f = k * fieldAlignment f))
 
 ||| Proof that a field does not overflow past a given struct size.
 public export

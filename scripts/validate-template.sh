@@ -153,9 +153,21 @@ echo ""
 log_info "Phase 3: GitHub Actions workflows"
 echo ""
 
+# codeql.yml is deliberately ABSENT and must not be required here.
+#
+# GitHub auto-enabled its DEFAULT CodeQL setup on this repository at creation
+# (rust + actions, extended query suite). Default setup REJECTS SARIF uploaded
+# by an advanced configuration — "CodeQL analyses from advanced configurations
+# cannot be processed when the default setup is enabled" — so the advanced
+# workflow was permanently red while scanning strictly LESS than the default
+# (it covered `actions` only). It was removed in commit ce52d18; restore it
+# from there only if default setup is ever turned off.
+#
+# Listing it as required made this 410-line validator exit 1 on a correct tree,
+# which nobody noticed because its only caller (benches/template_bench.sh)
+# discards the exit code. Recorded as DEBT C-1.
 REQUIRED_WORKFLOWS=(
     "hypatia-scan.yml"
-    "codeql.yml"
     "scorecard.yml"
     "quality.yml"
     "mirror.yml"

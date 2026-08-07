@@ -89,6 +89,7 @@ CONTRIBUTING.md            # GitHub community-health exception to AsciiDoc-by-de
 SECURITY.md                # GitHub community-health exception to AsciiDoc-by-default (standards#83)
 
 # ─── This repo's own root files (sr71-blackglider, added 2026-08-03) ─────────
+DEBT.md                    # the debt register — root-level index of every known gap, with the command that evidenced each
 Cargo.toml                 # the Rust reference kernel is the project's primary crate
 Cargo.lock                 # committed: reproducible builds for a non-published crate
 MATHEMATICAL-CONTRACT.md   # the single-world B3/S23 contract — the project's semantic anchor (ANCHOR.a2ml points here)

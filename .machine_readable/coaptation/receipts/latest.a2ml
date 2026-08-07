@@ -6,13 +6,13 @@
 [receipt]
 schema = "hyperpolymath.coaptation/1"
 repo = "sr71-blackglider"
-band = "amber"
-proposed-action = "advisory — soft drift within bands (posture/intend). Open an advisory issue; no re-anchor."
+band = "green"
+proposed-action = "none — the descriptile self-model coapts with the contractile set-point within tolerance."
 
 [coverage]
-clauses-total = 50
-descriptile-witnessed = 3
-probe-deferred-to-hunt = 22
+clauses-total = 53
+descriptile-witnessed = 4
+probe-deferred-to-hunt = 25
 must-trust-unmeasured-gaps = 0
 note = "Yard sees descriptile evidence only; probe-deferred obligations need a Hunt-tier run for a full hard-gate."
 
@@ -21,13 +21,13 @@ grade = "boolean_gate / boolean_gate_provenance"
 witnessed = 3
 refuted = 0
 unmeasured-gaps = 0
-probe-deferred = 22
+probe-deferred = 25
 gate = "pass"
 
 [reading.adjust]
 grade = "posture (advisory; accessibility / inclusive design)"
-satisfied = "0/1"
-posture-ok = false
+satisfied = "1/1"
+posture-ok = true
 
 [reading.intend]
 grade = "tropical (min-plus distance-to-north-star; wishes excluded)"
@@ -76,7 +76,10 @@ trust.template-files-readonly = probe-deferred
 trust.trust-deny-areas = probe-deferred
 trust.container-images-pinned = probe-deferred
 trust.no-dockerfile = probe-deferred
-adjust.placeholder-drift = refuted
+trust.site-security-headers = probe-deferred
+trust.site-well-known = probe-deferred
+trust.site-resource-records = probe-deferred
+adjust.placeholder-drift = witnessed
 adjust.template-version-drift = unmeasured
 adjust.readme-completeness = unmeasured
 adjust.example-accuracy = unmeasured
@@ -96,5 +99,5 @@ bust.sync-drift-between-repos = latent
 bust.contractile-parse-error = latent
 
 [provenance]
-contractiles = "intend@b5248bb14c9b must@deb0cb5de0b2 trust@76884f439a88 adjust@8faad9ca0650 dust@8ce4f3c1efa0 bust@dd6a53e1fc9b"
-descriptiles = "clade@b974798d108a state@9fbef88c72f8 ecosystem@1c30abd8f618 agentic@d72859864bbe anchor@8b66b03d7736"
+contractiles = "intend@80804e8b768d must@8d8382256159 trust@fd6ea0b08024 adjust@dc8e3d983cb0 dust@060c0122a50a bust@92698e631d4b"
+descriptiles = "clade@cde35c734e47 state@8cd4d55eb92a ecosystem@f38c1a27f137 agentic@d72859864bbe anchor@12f72263dca0"

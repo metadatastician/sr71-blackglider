@@ -77,14 +77,39 @@ run_gate "cargo test --release --all-targets" \
     cargo test --release --all-targets --manifest-path "$PROJECT_DIR/Cargo.toml"
 echo ""
 
-# ─── Section 3: constitutional proof gate (when a prover is present) ─
-bold "Section 3: Idris2 constitutional gate"
-if command -v idris2 >/dev/null 2>&1; then
-    run_gate "check-proofs.sh idris2 (MANIFEST-gated)" \
-        bash "$PROJECT_DIR/scripts/check-proofs.sh" idris2
-else
-    skip_test "check-proofs.sh idris2" "idris2 not installed on this runner; covered by 'just test' locally"
-fi
+# ─── Section 3: proof gates (each prover) ────────────────────────────
+#
+# A missing prover is FATAL under CI and a loud skip only on a developer
+# machine. The distinction matters: this loop is the ONLY place CI touches
+# the proofs, and an unconditional `command -v || skip` here re-created
+# precisely the hole scripts/check-proofs.sh was written to close — "a
+# MISSING TOOLCHAIN reported success". On a bare runner the whole section
+# scored PASS=0 FAIL=0 SKIP=4 and exited 0, while seven Idris2 modules,
+# one Coq, one Agda and one Lean module were all declared "gated".
+#
+# Locally, skipping stays useful (you may not have all four provers
+# installed to work on the Rust kernel). In CI the workflow installs them,
+# so absence is a workflow defect and must be red.
+bold "Section 3: proof gates"
+IN_CI="${CI:-false}"
+for prover in idris2 coq agda lean4; do
+    case "$prover" in
+        coq)   tool=coqc ;;
+        lean4) tool=lean ;;
+        *)     tool="$prover" ;;
+    esac
+    if command -v "$tool" >/dev/null 2>&1; then
+        run_gate "check-proofs.sh $prover (MANIFEST-gated)" \
+            bash "$PROJECT_DIR/scripts/check-proofs.sh" "$prover"
+    elif [ "$IN_CI" = "true" ]; then
+        red "  FAIL: $prover gate cannot run — '$tool' absent on a CI runner."
+        red "        CI must install every prover it claims to gate; a gate that"
+        red "        cannot run must not report OK. Fix the workflow, not this test."
+        FAIL=$((FAIL + 1))
+    else
+        skip_test "check-proofs.sh $prover" "$tool not installed locally; 'just test' gates it on a dev machine"
+    fi
+done
 
 # ═══════════════════════════════════════════════════════════════════════
 # Summary

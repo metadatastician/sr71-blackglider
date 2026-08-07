@@ -20,6 +20,11 @@ on:
       - 'src/**'
       - 'src/interface/ffi/**'
       - 'tests/**'
+      - 'verification/**'
+      - 'abi.ipkg'
+      - 'scripts/**'
+      - 'Justfile'
+      - 'Cargo.toml'
       - '.github/workflows/e2e.yml'
   pull_request:
     branches: [main, master]
@@ -27,6 +32,11 @@ on:
       - 'src/**'
       - 'src/interface/ffi/**'
       - 'tests/**'
+      - 'verification/**'
+      - 'abi.ipkg'
+      - 'scripts/**'
+      - 'Justfile'
+      - 'Cargo.toml'
   workflow_dispatch:
 permissions: read-all
 concurrency:

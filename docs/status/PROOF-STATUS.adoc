@@ -8,36 +8,154 @@
 
 Two ledgers are tracked here and must not be conflated:
 
-. *Formal (Idris2)* — the machine-checked constitutional companion, gated by
-  `verification/proofs/idris2/MANIFEST` and verified by
-  `bash scripts/check-proofs.sh idris2`.
+. *Formal (machine-checked)* — the constitutional companion and the ABI proof
+  set, gated by `verification/proofs/<prover>/MANIFEST` and verified by
+  `bash scripts/check-proofs.sh <idris2|coq|agda|lean4>`. Separately, the
+  *shipped* ABI seam (`src/interface/Abi/`, three modules) is typechecked as a
+  package by `idris2 --typecheck abi.ipkg`. The seam is a DIFFERENT artefact
+  from the template proofs: it lives in the `Abi.*` namespace, the template
+  proofs live in `ABI.*`, and `check-proofs.sh`'s MANIFEST covers only the
+  latter. Both are now gated; before 2026-08-07 the seam was gated by nothing.
 . *Executable exhaustion (Rust)* — finite-domain proofs by exhaustive check
   (`tests/foundation.rs` C1–C7, `tests/constitutional.rs` C8–C13), verified by
   `cargo test`. These are complete over their stated finite domains (all 512
-  local rule configurations; all 65,536 4×4 worlds against an independent
-  oracle) but are not formal proofs over unbounded domains. See
-  `PROOF-ROADMAP.md` for exactly what each one establishes.
+  local B3/S23 rule configurations; all 65,536 4×4 worlds against an
+  independent oracle; a 240-generation Snark reflector trace) but they are
+  proofs BY EXHAUSTION over a stated finite domain, NOT formal proofs over
+  unbounded domains. See `PROOF-ROADMAP.md` for exactly what each establishes.
+
+=== Obligation ledger (IDs from `PROOF-NEEDS.adoc`)
 
 [cols="2,1,1,1,1,1", options="header"]
 |===
 | Category | Total | Done | In Progress | Blocked | Remaining
 
-| ABI/FFI (ABI) | 5 | 1 | 0 | 4 | 4
+| ABI/FFI (ABI) | 5 | 5 | 0 | 0 | 0
 | Typing (TP) | 2 | 1 | 0 | 0 | 1
 | Invariant (INV) | 0 | 0 | 0 | 0 | 0
 | Security (SEC) | 0 | 0 | 0 | 0 | 0
 | Concurrency (CONC) | 0 | 0 | 0 | 0 | 0
 | Algorithm (ALG) | 0 | 0 | 0 | 0 | 0
 | Domain (DOM) | 0 | 0 | 0 | 0 | 0
-| *Total* | *7* | *2* | *0* | *4* | *5*
+| *Total* | *7* | *6* | *0* | *0* | *1*
 |===
 
-*Overall*: 2 of 7 Idris2 obligations proven (both gated modules compile,
-`%default total`, no `believe_me` / `assert_total`); the Rust executable
-foundation is 12/12 green (verified 2026-08-03). The README badge
-`status-foundation_proven` refers to this foundation ledger — the
-architectural contract C1–C13 plus the gated constitutional companion — not
-to the quarantined ABI proof set below.
+=== Gated-module ledger (what the gates actually check)
+
+[cols="2,1,1,1,3", options="header"]
+|===
+| Gate | Gated | Quarantined | Result | Toolchain
+
+| `check-proofs.sh idris2` | 7 | *0* | PASS | Idris2 0.7.0
+| `check-proofs.sh coq` | 1 | 0 | PASS | Coq 8.20.1
+| `check-proofs.sh agda` | 1 | 0 | PASS | Agda 2.6.4.3
+| `check-proofs.sh lean4` | 1 | 0 | PASS | Lean 4.32.2
+| `idris2 --typecheck abi.ipkg` (shipped seam) | 3 | — | PASS | Idris2 0.7.0
+| `cargo test --all-targets` | 12 tests | — | 12/12 pass | cargo/rustc 1.97.1
+| `zig build test` (`src/interface/ffi/`) | 11 tests, 5 steps | — | 11/11 pass | zig 0.16.0
+| `tests/aspect_tests.sh` | 2 aspects | — | PASS=2 FAIL=0 | bash
+|===
+
+*Overall*: 6 of 7 obligations discharged. The Idris2 quarantine is *EMPTY* —
+all seven modules under `verification/proofs/idris2/` are gated and compile
+(`%default total`, no `believe_me` / `assert_total` / `postulate`). The Coq,
+Agda and Lean4 gates were wired for the first time on 2026-08-07 and are 1/1
+each. The shipped `abi.ipkg` seam typechecks as a package. The Rust executable
+foundation is 12/12 green and the Zig FFI is 11/11 green.
+
+All figures above were re-measured in this working tree on 2026-08-07 by
+running the commands in <<verification-commands>>.
+
+The README badge `status-foundation_proven` refers to the *executable
+foundation* ledger — the architectural contract C1–C13 plus the gated
+constitutional companion `BlackGlider/Constitution.idr`. It does NOT refer to
+the ABI proof set, and it does NOT refer to the Coq/Agda/Lean modules. Read
+<<what-the-green-does-not-mean>> before quoting any of it.
+
+[#what-the-green-does-not-mean]
+== WHAT THE GREEN DOES *NOT* MEAN — read before citing this file
+
+This section is normative. Every claim in it was checked in-tree on
+2026-08-07; none of it is inference from a status document.
+
+=== The Coq, Agda and Lean4 modules are TEMPLATE EXEMPLARS
+
+`verification/proofs/coq/TypeSafety.v`, `verification/proofs/agda/Properties.agda`
+and `verification/proofs/lean4/ApiTypes.lean` are *verbatim RSR template stubs*.
+They compile, they are MANIFEST-gated, and they contain no `Admitted`,
+`postulate` or `sorry` — and they prove *nothing whatever about Conway
+physics, about this project's public API, or about any BlackGlider type*.
+
+What they actually prove, as shipped:
+
+[cols="1,2,3", options="header"]
+|===
+| Prover | File | What is really proved
+
+| Coq 8.20.1 | `TypeSafety.v` | Progress/preservation for a *toy* two-type expression language (`TyNat`/`TyBool`, `EConst`/`ETrue`/`EFalse`/`EPlus`/`EEq`). The file's own header says "Replace with your project's type system."
+| Agda 2.6.4.3 | `Properties.agda` | `length (xs ++ ys) ≡ length xs + length ys`, plus a `Monotone` record template. Header: "Replace with your project's domain-specific proofs."
+| Lean 4.32.2 | `ApiTypes.lean` | Functor laws (`map_id`, `map_comp`) for a generic `ApiResult α`, plus `BoundedNat` invariants. Header: "Template — replace with your project's API types."
+|===
+
+Their green is *toolchain and gate evidence only*. It demonstrates that the
+prover is installed, that the MANIFEST wiring is honest, and that the module
+still compiles. It is not domain verification and must never be reported as
+such. The Idris2 MANIFEST is already explicit about the same thing for
+`Types.idr` ("template examples, honest ones").
+
+Consequence for the ledger: obligation *TP-2* ("Public API type safety —
+exported functions", assigned to `lean4/ApiTypes.lean`) is counted as
+*Remaining*, not Done, even though the file is gated and green. The file
+compiles; the obligation as written is not discharged.
+
+=== The Idris2 ABI set proves properties of a MODEL of a C ABI
+
+Obligations ABI-1 … ABI-5 are discharged against
+`verification/proofs/idris2/ABI/*.idr`. Those modules define their own
+`StructField`, `StructLayout`, `FieldAligned`, `AllFieldsInBounds`,
+`SafePtr` and `CABICompliant` in the `ABI.*` namespace, and prove theorems
+about *those definitions*. They do not prove anything about the shipped Zig
+FFI in `src/interface/ffi/`, and nothing connects them to it:
+
+* `grep -rIn 'CABICompliant\|StructLayout\|FieldsAligned\|SafePtr' --include=*.rs --include=*.zig`
+  returns *zero* hits outside `target/`. No Rust and no Zig source mentions any
+  of these names.
+* The only inhabitant of the template `ABI.Compliance.CABICompliant` is
+  `emptyStructCompliant : CABICompliant (MkLayout "empty" [] 1 1)` — a
+  *fieldless* struct with size 1 and alignment 1. No layout of any real
+  BlackGlider or FFI struct is certified.
+* The shipped seam `src/interface/Abi/Layout.idr` (namespace `Abi.Layout`)
+  independently declares its own `StructLayout` and `CABICompliant` and
+  certifies one worked example (`struct { int32_t x; int64_t y; double z; }`,
+  size 24, alignment 8). That is a genuine, non-trivial certificate — but it
+  is a certificate about an Idris2 *description* of a C struct, hand-written
+  to match, not extracted from or checked against the Zig code that crosses
+  the boundary.
+
+=== No refinement connects the model to the kernel
+
+There is *no machine-checked refinement* between the Idris2 model and the Rust
+implementation, and none between either of them and the Zig FFI. The proofs
+and the kernel are verified *separately*; nothing in this repository proves
+they agree. Any statement of the form "the Rust kernel is proved correct by
+the Idris2 proofs" is false.
+
+The Rust kernel is 613 LOC across `src/*.rs` (tests 357 LOC), is
+`#![forbid(unsafe_code)]`, and has zero external dependencies. Its assurance
+comes entirely from the executable-exhaustion ledger, not from the formal one.
+
+=== Also unwired or absent
+
+* `verification/proofs/tlaplus/StateMachine.tla` is checked by *no gate*:
+  `scripts/check-proofs.sh` accepts only `idris2|lean4|agda|coq`, and neither
+  it nor the `Justfile` mentions TLA+ anywhere. The file is an uninstantiated
+  template modelling a generic request pipeline, irrelevant to this project,
+  and no TLA+ toolchain is installed.
+* The presentation/renderer layer and the mission semantics *do not exist*.
+  `STATE.a2ml` records 25% complete; `PROOF-ROADMAP.md` names a small, frozen
+  mission specification as the next real step.
+* `mise.toml` pins rust/just/zig but *not* the four prover toolchains, which
+  `just test` now treats as fatal-if-absent.
 
 == Proofs Done
 
@@ -45,9 +163,45 @@ to the quarantined ABI proof set below.
 |===
 | ID | Proof | Prover | File | Date | Verified By
 
+| ABI-1 | Non-null pointer proofs: `SafePtr` with an erased non-null witness, `So`-witness uniqueness, handle equality | Idris2 0.7.0 | verification/proofs/idris2/ABI/Pointers.idr | 2026-08-07 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
+| ABI-2 | Memory layout correctness: struct size/alignment/padding, alignment stated as `NonZero` + divisibility | Idris2 0.7.0 | verification/proofs/idris2/ABI/Layout.idr | 2026-08-07 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
+| ABI-3 | Platform type size proofs: per-platform pointer/int/size_t sizes with `LTE` bounds | Idris2 0.7.0 | verification/proofs/idris2/ABI/Platform.idr | 2026-08-07 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
 | ABI-4 | FFI foreign export surface compiles total and constructive | Idris2 0.7.0 | verification/proofs/idris2/ABI/Foreign.idr | 2026-08-01 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
-| TP-1 | Project constitutional equations: complete legal B3/S23 centre/count domain, exact chart headings, deterministic evolution, observer exclusion, causal radius | Idris2 0.7.0 | verification/proofs/idris2/BlackGlider/Constitution.idr | 2026-08-01 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
+| ABI-5 | C ABI compliance record over Layout + Platform (sole inhabitant: the fieldless `empty` struct — see <<what-the-green-does-not-mean>>) | Idris2 0.7.0 | verification/proofs/idris2/ABI/Compliance.idr | 2026-08-07 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
+| TP-1 | Core data type well-formedness: bounded-Nat and non-empty-list well-formedness (template examples, honest ones) | Idris2 0.7.0 | verification/proofs/idris2/Types.idr | 2026-08-07 | scripts/check-proofs.sh idris2 (MANIFEST-gated)
 |===
+
+=== Gated modules carrying no obligation ID
+
+[cols="1,3,1,2,2", options="header"]
+|===
+| Artefact | What it establishes | Prover | Date | Verified By
+
+| `BlackGlider/Constitution.idr` | Project constitutional equations: complete legal B3/S23 centre/count domain, exact chart headings, deterministic evolution, observer exclusion, causal radius. *The one domain-real formal module in the repository.* | Idris2 0.7.0 | 2026-08-01 | scripts/check-proofs.sh idris2
+| `coq/TypeSafety.v` | Toy expression-language type safety. TEMPLATE EXEMPLAR — proves nothing about this project. | Coq 8.20.1 | 2026-08-07 | scripts/check-proofs.sh coq
+| `agda/Properties.agda` | List-append length preservation. TEMPLATE EXEMPLAR — proves nothing about this project. | Agda 2.6.4.3 | 2026-08-07 | scripts/check-proofs.sh agda
+| `lean4/ApiTypes.lean` | `ApiResult` functor laws + `BoundedNat`. TEMPLATE EXEMPLAR — see TP-2 under Remaining. | Lean 4.32.2 | 2026-08-07 | scripts/check-proofs.sh lean4
+|===
+
+=== Shipped ABI seam — a SEPARATE artefact from the template proofs
+
+Gated by `idris2 --typecheck abi.ipkg` (package `abi`, `sourcedir =
+"src/interface"`, `depends = base`). This is the Idris2 artefact the FFI seam
+is actually built around; `check-proofs.sh` does not cover it, and until
+2026-08-07 nothing did.
+
+[cols="1,1,3,1", options="header"]
+|===
+| Module | LOC | Content | Date
+
+| `Abi.Types` | 112 | Seam types; uses an *erased* (quantity-0) non-null witness so `SafePtr` keeps its newtype-transparent `Bits64` representation | 2026-08-07
+| `Abi.Layout` | 128 | `StructLayout` with an auto-erased `Divides alignment totalSize`; `CABICompliant`; a certified worked example (`{ int32_t x; int64_t y; double z; }` → size 24, alignment 8) | 2026-08-07
+| `Abi.Foreign` | 83 | Foreign declarations for the seam | 2026-08-07
+|===
+
+Per-file `idris2 --check src/interface/Abi/Foo.idr` warns on module/path
+mismatch by design (Idris derives the expected module from the full path);
+`abi.ipkg` documents this. Use the package typecheck, not per-file `--check`.
 
 == Proofs In Progress
 
@@ -60,22 +214,30 @@ to the quarantined ABI proof set below.
 
 == Proofs Blocked
 
-Quarantined in `verification/proofs/idris2/MANIFEST`: known-broken, and the
-gate requires them to KEEP failing (a quarantined module that starts compiling
-is itself a gate failure, forcing the ledger to be updated).
+*None.* The Idris2 quarantine list in
+`verification/proofs/idris2/MANIFEST` is EMPTY, and no MANIFEST for any of the
+four provers contains a `quarantine` entry. The five previously-quarantined
+Idris2 modules (ABI/Pointers, ABI/Layout, ABI/Platform, ABI/Compliance, Types)
+and the previously-quarantined `lean4/ApiTypes.lean` were repaired on
+2026-08-04–07 and promoted to `gated`.
 
-[cols="1,3,2,3", options="header"]
+The quarantine mechanism itself remains live and is not decorative: a module
+listed `quarantine` that *starts* compiling fails the gate, forcing this ledger
+to be updated. There is simply nothing in it today.
+
+Root causes of the six repairs, for the record — each was distinct and real:
+
+[cols="1,4", options="header"]
 |===
-| ID | Proof | Blocked By | Notes
+| Module | Root cause
 
-| ABI-1 | Non-null pointer proofs (ABI/Pointers.idr) | Design decision | `.nonNull` declared at quantity 0 (erased) yet projected into a value position, plus a unification failure — design decision, not a typo
-| ABI-2 | Memory layout correctness (ABI/Layout.idr) | Missing imports + real failure | Undefined name NonZero (needs Data.Nat); then a genuine unification failure (S ?x vs f .fieldAlignment)
-| ABI-3 | Platform type size proofs (ABI/Platform.idr) | Missing imports | Undefined name LTE (needs Data.Nat); then Undefined name lteRefl
-| ABI-5 | C ABI compliance (ABI/Compliance.idr) | ABI-2, ABI-3 | Depends on quarantined ABI.Layout / ABI.Platform
+| ABI/Platform.idr | `LTE` undefined (needs `Data.Nat`); then `lteRefl` is absent from idris2 0.7.0
+| ABI/Layout.idr | `NonZero` undefined (needs `Data.Nat`); then `SIsNonZero : NonZero (S n)` cannot unify with a non-literal `fieldAlignment f` ("Can't solve constraint between: S ?x and f .fieldAlignment"). Restated as `NonZero` + divisibility
+| ABI/Pointers.idr | Proof ACCESSOR declared at runtime quantity instead of `0`; fixed with one character on the accessor (`0 safePtrNeverNull`)
+| ABI/Compliance.idr | Downstream of Layout/Platform; `sizeAligned` restated the same way, with the `NonZero` conjunct retained
+| Types.idr | An idris2 positivity-checker limitation on a type synonym; `AFBCons` unfolded past it
+| lean4/ApiTypes.lean | A binder named `max`, which can never auto-bind as an implicit because `max` is a global function in Lean 4; renamed to `bound` and the `ApiResult` namespace closed
 |===
-
-`Types.idr` is likewise quarantined (Idris1-era template, has never compiled)
-but carries no obligation ID of its own.
 
 == Proofs Remaining
 
@@ -83,31 +245,63 @@ but carries no obligation ID of its own.
 |===
 | ID | Proof | Category | Prover | Priority | Est. Effort
 
-| ABI-1 | Non-null pointer proofs | ABI | Idris2 | P2 | 2h
-| ABI-2 | Memory layout correctness | ABI | Idris2 | P2 | 4h
-| ABI-3 | Platform type size proofs | ABI | Idris2 | P2 | 2h
-| ABI-5 | C ABI compliance | ABI | Idris2 | P2 | 4h
-| TP-2 | Public API type safety | TP | Lean4 | P3 | 4h
+| TP-2 | Public API type safety (exported functions of *this* project). `lean4/ApiTypes.lean` is gated and green but is a verbatim template exemplar (`ApiResult` functor laws), so the obligation is not discharged — see <<what-the-green-does-not-mean>>. | TP | Lean4 | P3 | 4h
 |===
 
-The ABI set is template-inherited scaffolding around the Zig FFI seam; it is
-deprioritised behind the mission-specification work described in
-`PROOF-ROADMAP.md` ("the useful constitutional boundary has been reached;
-further progress requires engineering a small, frozen mission specification").
+Not obligations under `PROOF-NEEDS.adoc`, but the honest next steps:
 
+* Replace the Coq and Agda template exemplars with domain content, or retire
+  them from the MANIFEST. Gating a stub buys toolchain evidence and nothing
+  else.
+* Connect the ABI model to the shipped Zig FFI — today the `ABI.*` proof set
+  and `src/interface/ffi/` share no identifier.
+* A machine-checked refinement from the Idris2 model to the Rust kernel.
+* Either wire `verification/proofs/tlaplus/StateMachine.tla` (which requires
+  instantiating it for this project and installing a TLA+ toolchain) or delete
+  it. It is currently an ungated, irrelevant template.
+* The mission specification named in `PROOF-ROADMAP.md` ("the useful
+  constitutional boundary has been reached; further progress requires
+  engineering a small, frozen mission specification") remains the gating item
+  for everything downstream of the constitution.
+
+[#verification-commands]
 == Verification Commands
+
+Every command below was run in this working tree on 2026-08-07 and produced
+the result recorded in the ledgers above.
 
 [source,bash]
 ----
-# The honest Idris2 gate (MANIFEST-driven; quarantined modules must keep failing)
-bash scripts/check-proofs.sh idris2
+# The four MANIFEST-driven prover gates.
+# An absent toolchain is FATAL by design — a gate that cannot run never reports OK.
+# A quarantined module that starts compiling is itself a gate failure.
+bash scripts/check-proofs.sh idris2    # 7/7 gated PASS, quarantine empty
+bash scripts/check-proofs.sh coq       # 1/1 gated PASS
+bash scripts/check-proofs.sh agda      # 1/1 gated PASS
+bash scripts/check-proofs.sh lean4     # 1/1 gated PASS
 
-# The executable foundation (C1–C13)
-cargo test --all-targets
+# The SHIPPED ABI seam (src/interface/Abi/, 3 modules) — a separate artefact
+# that check-proofs.sh's MANIFEST does NOT cover. Package typecheck, not --check.
+idris2 --typecheck abi.ipkg
 
-# Both, plus quality gates — the repo golden path
+# The executable foundation (C1-C13), by exhaustion over finite domains
+cargo test --all-targets               # 12/12 pass
+
+# The Zig FFI
+(cd src/interface/ffi && zig build test --summary all)   # 11/11 tests, 5/5 steps
+
+# SPDX coverage + dangerous-construct scan
+bash tests/aspect_tests.sh             # PASS=2 FAIL=0 WARN=0
+
+# The repo golden path — `just test` runs cargo, zig, abi.ipkg and all four
+# prover gates; `just quality` re-runs the prover gates plus lint/format
 just test && just quality
 ----
+
+CI: `.github/workflows/proof-gate.yml` (added 2026-08-07) runs one job per
+prover, each installing its own toolchain. Before that workflow existed, *no*
+workflow in this repository invoked `check-proofs.sh`, `just test`, or the Zig
+tests — every proof was enforced on one laptop and nowhere else.
 
 == Changelog
 
@@ -117,4 +311,9 @@ just test && just quality
 
 | 2026-04-04 | Initial proof status tracking | Template
 | 2026-08-03 | Filled from ground truth: check-proofs.sh idris2 PASS (2 gated compile, 5 quarantined fail as recorded, 7/7 accounted); cargo test 12/12 | Claude (rescue workup)
+| 2026-08-04 | Idris2 quarantine emptied: all five modules repaired and promoted to `gated` (Data.Nat imports; `lteRefl` absent from 0.7.0; accessor quantity; `SIsNonZero` restated as `NonZero` + divisibility; a positivity-checker limitation on a type synonym). `lean4/ApiTypes.lean` promoted too (binder named `max` can never auto-bind) | Claude (workup)
+| 2026-08-07 | *NEAR-MISS, caught by adversarial review.* The `FieldAligned` / `sizeAligned` restatement from `modNatNZ ... SIsNonZero = 0` to bare divisibility was briefly *WEAKER* than the phrasing it replaced: at alignment 0, `(0 ** Refl)` proves `FieldAligned (MkField "z" 0 8 0)`, and a complete `CABICompliant` certificate could be built for a size-0 / alignment-0 struct that cannot exist in C (C guarantees `sizeof >= 1`, `alignof >= 1`). The mod phrasing could not even be FORMED at alignment 0, and unformable means uninhabited. An earlier doc comment claimed the restatement was "strictly stronger at alignment 0" — exactly backwards. FIXED by adding a `NonZero` conjunct; the attack is now rejected ("Mismatch between: S ?x and 0") while legal layouts still prove | Claude + adversarial review
+| 2026-08-07 | *Second defect from the same repair, also caught and reverted.* De-erasing proof witnesses (quantity 0 → unrestricted) so proofs could project them cost the newtype-transparent representation: measured with `--dumpcases`, `SafePtr` went from a bare `Bits64` to a two-field heap object per pointer. Reverted; the correct repair was one character on the ACCESSOR (`0 safePtrNeverNull`), matching the shipped seam `src/interface/Abi/Types.idr`, which already used an erased witness | Claude + adversarial review
+| 2026-08-07 | Coq, Agda and Lean4 gates WIRED for the first time (previously only idris2 ran): 1/1 PASS each. `abi.ipkg` package typecheck added to `just test` — the one Idris2 artefact the FFI depends on had been the one artefact no gate checked. `zig build test` now real (build.zig was empty scaffolding, so `zig build` exited 0 having compiled nothing, hiding three genuine errors); 11/11 pass | Claude (workup)
+| 2026-08-07 | Ledger rewritten against re-measured ground truth: ABI-1…ABI-5 and TP-1 moved from Blocked/Remaining to Done; Blocked section emptied; TP-2 held at Remaining because `lean4/ApiTypes.lean` is a template exemplar. Added the normative "WHAT THE GREEN DOES NOT MEAN" section recording that Coq/Agda/Lean are template exemplars proving nothing about Conway physics, that the ABI set proves properties of a MODEL of a C ABI rather than of the shipped Zig FFI (zero `.rs`/`.zig` references to any of its names; sole `CABICompliant` inhabitant is a fieldless struct), that no refinement connects model to kernel, and that `tlaplus/StateMachine.tla` is gated by nothing | Claude (workup)
 |===

@@ -3,13 +3,23 @@
 [tools]
 rust = "1.97.0"
 just = "1.56.0"
+# Pinned 2026-08-04, when the Zig FFI seam stopped being unbuilt scaffolding
+# and joined the golden path. Estate ruling: zig 0.16.0 everywhere.
+zig = "0.16.0"
 
 [env]
 CARGO_TERM_COLOR = "always"
 
+# These delegate to the Justfile rather than restating it.
+#
+# They previously carried their own weaker copies — `[tasks.test]` ran only
+# `cargo test`, so `mise run test` reported success while checking none of
+# the Idris2/Coq/Agda/Lean proof gates or the Zig FFI tests that `just test`
+# gates on. Two definitions of "the tests pass" is one definition too many:
+# the weaker one is the one that gets quoted.
 [tasks.test]
-run = "cargo test --all-targets"
+run = "just test"
 
 [tasks.quality]
-run = "cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --all-targets"
+run = "just quality"
 

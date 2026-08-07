@@ -121,10 +121,23 @@ clean-all: clean
 # TEST & QUALITY
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Run all tests
+# Run all tests. Every prover with proofs in-tree is gated here — the gate
+# script FAILS (never skips) when a toolchain is absent, so a green
+# `just test` means every proof was actually checked on this machine.
 test *args:
     cargo test --all-targets {{args}}
+    cd src/interface/ffi && zig build test --summary all
+    # The SHIPPED ABI seam (src/interface/Abi/, three modules) — distinct from
+    # the template proofs under verification/proofs/idris2/, which is all
+    # check-proofs.sh's MANIFEST covers. Nothing gated this until 2026-08-07,
+    # so the one Idris2 artefact the FFI actually depends on was the one
+    # artefact no gate checked. A package typecheck is the honest form here;
+    # per-file --check warns on module/path mismatch by design (see abi.ipkg).
+    idris2 --typecheck abi.ipkg
     bash scripts/check-proofs.sh idris2
+    bash scripts/check-proofs.sh coq
+    bash scripts/check-proofs.sh agda
+    bash scripts/check-proofs.sh lean4
 
 # Run tests with verbose output
 test-verbose:
@@ -135,65 +148,93 @@ test-smoke:
     cargo test --test foundation c1_all_512_local_configurations_are_exactly_b3_s23
 
 # Run end-to-end tests (full pipeline: build → run → verify)
+#
+# Ran a single hand-picked cargo test (c3_c4_snark_reaction) rather than
+# tests/e2e.sh, so "e2e passed" meant one assertion out of the release-mode
+# pipeline the harness actually defines.
 e2e:
-    cargo test --test foundation c3_c4_snark_reaction_produces_only_a_causal_reflected_glider_and_recovers
+    bash tests/e2e.sh
 
 # Run aspect tests (cross-cutting concern validation)
+#
+# Was an echo-only TODO stub that printed "Aspect tests passed!" and exited 0
+# while running nothing — and `test-all` depended on it, so the merge-gate
+# recipe announced "safe to merge" on the strength of an echo. The harness it
+# was meant to call has existed all along.
 aspect:
-    @echo "Running aspect tests..."
-    # TODO: Replace with your aspect test command. Examples:
-    #   bash tests/aspect_tests.sh           # Shell-based aspect tests
-    #   cargo test --test aspects             # Rust aspect tests
-    # Aspect tests validate architectural invariants:
-    #   - Thread safety (mutex in FFI modules)
-    #   - ABI/FFI contract (declarations match exports)
-    #   - SPDX compliance (all files have license headers)
-    #   - No dangerous patterns (believe_me, assert_total, etc.)
-    @echo "Aspect tests passed!"
+    bash tests/aspect_tests.sh
 
-# Run benchmarks (performance regression detection)
+
+# Run benchmarks — NOT IMPLEMENTED, and says so.
+#
+# Exits non-zero rather than printing "Benchmarks complete!" over an empty
+# body. It was an echo-only stub that `test-all` depended on, so the
+# merge-gate recipe counted a benchmark suite that never ran. The repo
+# declares no `benchmarks` capability (.machine_readable/rsr-profile.a2ml)
+# and ships no cargo bench target; benches/template_bench.sh times template
+# mechanics, not this kernel. Tracked as DEBT T-3.
 bench:
-    @echo "Running benchmarks..."
-    # TODO: Replace with your benchmark command. Examples:
-    #   cargo bench                           # Rust criterion
-    #   zig build bench                       # Zig benchmarks
-    #   mix run bench/benchmarks.exs          # Elixir benchee
-    #   deno bench                            # Deno bench
-    @echo "Benchmarks complete!"
+    #!/usr/bin/env bash
+    echo "NOT IMPLEMENTED: no benchmark suite exists for this project." >&2
+    echo "  The kernel has no cargo bench target; benches/template_bench.sh" >&2
+    echo "  benchmarks RSR template mechanics, not Conway evolution." >&2
+    echo "  See DEBT.md (T-3). This recipe fails rather than claim success." >&2
+    exit 1
 
-# Run readiness tests (Component Readiness Grade: D/C/B)
+# Run readiness tests — NOT IMPLEMENTED, and says so.
+#
+# Same defect and same reasoning as `bench`. The Component Readiness Grade is
+# assessed by hand in docs/status/READINESS.adoc against the CRG v2.0 evidence
+# gates; there is no executable readiness suite. Tracked as DEBT T-3.
 readiness:
-    @echo "Running readiness tests..."
-    # TODO: Replace with your readiness test command. Examples:
-    #   cargo test --test readiness -- --nocapture
-    @echo "Readiness tests complete!"
+    #!/usr/bin/env bash
+    echo "NOT IMPLEMENTED: there is no executable readiness suite." >&2
+    echo "  CRG is assessed in docs/status/READINESS.adoc; run 'just crg-grade'" >&2
+    echo "  to read the recorded grade. See DEBT.md (T-3)." >&2
+    exit 1
 
-# Print the current CRG grade (reads from READINESS.md '**Current Grade:** X' line)
+# Print the current CRG grade, read from docs/status/READINESS.adoc.
+#
+# Had three independent faults: Makefile `$$` escaping leaked into a Justfile
+# (bash read `$$` as the PID, then choked on the following paren — a hard
+# syntax error, exit 2); it read `READINESS.md`, which does not exist here;
+# and it matched `**Current Grade:** X` (Markdown bold) where the AsciiDoc
+# file writes `*Current Grade:* X`. Three ways to be wrong about one line.
 crg-grade:
-    @grade=$$(grep -oP '(?<=\*\*Current Grade:\*\* )[A-FX]' READINESS.md 2>/dev/null | head -1); \
-    [ -z "$$grade" ] && grade="X"; \
-    echo "$$grade"
+    #!/usr/bin/env bash
+    set -uo pipefail
+    grade=$(grep -oP '(?<=^\*Current Grade:\* )[A-FX]' docs/status/READINESS.adoc 2>/dev/null | head -1)
+    [ -z "$grade" ] && grade="X"
+    echo "$grade"
 
 # Print a shields.io CRG badge for embedding in README files
 # Looks for '**Current Grade:** X' in READINESS.md; falls back to X
 crg-badge:
-    @grade=$$(grep -oP '(?<=\*\*Current Grade:\*\* )[A-FX]' READINESS.md 2>/dev/null | head -1); \
-    [ -z "$$grade" ] && grade="X"; \
-    case "$$grade" in \
-      A) color="brightgreen" ;; \
-      B) color="green" ;; \
-      C) color="yellow" ;; \
-      D) color="orange" ;; \
-      E) color="red" ;; \
-      F) color="critical" ;; \
-      *) color="lightgrey" ;; \
-    esac; \
-    echo "[![CRG $$grade](https://img.shields.io/badge/CRG-$$grade-$$color?style=flat-square)](https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades)"
+    #!/usr/bin/env bash
+    set -uo pipefail
+    grade=$(just crg-grade)
+    case "$grade" in
+      A) color="brightgreen" ;;
+      B) color="green" ;;
+      C) color="yellow" ;;
+      D) color="orange" ;;
+      E) color="red" ;;
+      F) color="critical" ;;
+      *) color="lightgrey" ;;
+    esac
+    echo "image:https://img.shields.io/badge/CRG-${grade}-${color}?style=flat-square[CRG ${grade},link=\"https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades\"]"
 
-# Run the full merge-requirement test suite (ALL categories)
-# Per STANDING rule: P2P + E2E + aspect + execution + lifecycle + bench
-test-all: test e2e aspect bench readiness
-    @echo "All test categories passed — safe to merge!"
+# Run the full merge-requirement test suite (every category that EXISTS).
+#
+# `bench` and `readiness` were dependencies here while both were echo-only
+# stubs, so this recipe printed "safe to merge!" partly on the strength of two
+# echoes. They are now honest (they fail as unimplemented), which is exactly
+# why they cannot be dependencies: a merge gate must be composed of checks
+# that can pass truthfully. They return here when they do real work — see
+# DEBT.md (T-3).
+test-all: test e2e aspect
+    @echo "All IMPLEMENTED test categories passed (test + e2e + aspect)."
+    @echo "Not covered: benchmarks, readiness suite — see DEBT.md (T-3)."
 
 # Run all quality checks
 quality: fmt-check lint test
@@ -357,16 +398,14 @@ ci: deps quality proof-check-all
     @echo "CI pipeline complete!"
 
 # Install git hooks
+#
+# Delegates to .githooks/install.sh — the ONE hook mechanism in this repo.
+# This recipe used to write its own hook into .git/hooks/pre-commit, which
+# git never reads once core.hooksPath is set to .githooks (as install.sh
+# sets it). It installed a gate that could not fire, then announced
+# "Git hooks installed". The hook body now lives in .githooks/pre-commit.
 install-hooks:
-    @mkdir -p .git/hooks
-    @cat > .git/hooks/pre-commit << 'HOOKEOF'
-    #!/bin/bash
-    just fmt-check || exit 1
-    just lint || exit 1
-    just assail || exit 1
-    HOOKEOF
-    @chmod +x .git/hooks/pre-commit
-    @echo "Git hooks installed"
+    @bash .githooks/install.sh
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECURITY
@@ -408,13 +447,36 @@ state-phase:
 # GUIX
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Enter Guix development shell (primary)
+# Guix recipes — BLOCKED on a foreign package definition. See DEBT.md L-4/C-6.
+#
+# Two independent faults, neither of which this recipe may paper over:
+#
+#   1. Both recipes referenced `guix.scm` at the repository ROOT. There is no
+#      such file; the only one is build/guix.scm. So neither recipe has ever
+#      run, on any machine.
+#   2. build/guix.scm is not this project's package. It declares
+#      (name "squisher-corpus"), (source #f), gnu-build-system for a Cargo
+#      crate, and a PMPL-1.0-or-later licence against this repo's MPL-2.0 —
+#      a known estate-wide clobber that reached this repository.
+#
+# Correcting the path alone would turn a recipe that has never run into one
+# that successfully builds SOMEONE ELSE'S package under the WRONG LICENCE.
+# That is strictly worse than failing, so these fail with an explanation until
+# L-4 is resolved. Fixing guix.scm is owner-only: a licence field is a licence
+# edit, and doctrine forbids an agent touching those.
 guix-shell:
-    guix shell -D -f guix.scm
+    #!/usr/bin/env bash
+    echo "BLOCKED: build/guix.scm declares (name \"squisher-corpus\") under" >&2
+    echo "         PMPL-1.0-or-later; this repository is MPL-2.0." >&2
+    echo "         See DEBT.md L-4 (owner-only) and C-6." >&2
+    exit 1
 
-# Build with Guix
 guix-build:
-    guix build -f guix.scm
+    #!/usr/bin/env bash
+    echo "BLOCKED: see 'just guix-shell' — build/guix.scm is a foreign package" >&2
+    echo "         definition. Building it would produce squisher-corpus." >&2
+    echo "         See DEBT.md L-4 (owner-only) and C-6." >&2
+    exit 1
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HYBRID AUTOMATION
@@ -513,8 +575,35 @@ maint-assault:
     @./.machine_readable/scripts/maintenance/maint-assault.sh
 
 # Run panic-attacker pre-commit scan (foundational floor-raise requirement)
+#
+# This recipe was `cmd -v panic-attack && panic-attack assail . || echo WARN`,
+# which exits 0 in BOTH failure modes:
+#   * tool absent      -> echoes a warning, reports success;
+#   * tool present but SCAN FAILS -> `&&` short-circuits to the `||` branch,
+#     the echo succeeds, and the finding is reported as success.
+# `just install-hooks` writes `just assail || exit 1` into .git/hooks/pre-commit,
+# so the pre-commit security scan could never block a commit — the exact
+# "null check that emits reassuring text" scripts/check-proofs.sh was written
+# to eliminate. Verified 2026-08-04: panic-attack absent here, `just assail`
+# exited 0.
+#
+# Absence is now fatal by default, matching check-proofs.sh ("a gate that
+# cannot run must never report OK"). Set ASSAIL_ALLOW_MISSING=1 to downgrade
+# that to a loud skip — an explicit, recorded decision rather than a silent
+# default.
 assail:
-    @command -v panic-attack >/dev/null 2>&1 && panic-attack assail . || echo "WARN: panic-attack not found — install from https://github.com/hyperpolymath/panic-attacker"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v panic-attack >/dev/null 2>&1; then
+        panic-attack assail .          # exit code propagates — a finding fails the gate
+    elif [ "${ASSAIL_ALLOW_MISSING:-0}" = "1" ]; then
+        echo "SKIP: panic-attack not installed; ASSAIL_ALLOW_MISSING=1 set — scan NOT run." >&2
+    else
+        echo "FAIL: panic-attack not found — this gate cannot run, so it must not pass." >&2
+        echo "      Install: https://github.com/hyperpolymath/panic-attacker" >&2
+        echo "      Or set ASSAIL_ALLOW_MISSING=1 to skip deliberately." >&2
+        exit 1
+    fi
 
 
 # Self-diagnostic — checks dependencies, permissions, paths

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= AFFIRMATION — SR-71 BlackGlider, as of <UTC timestamp>
+= AFFIRMATION — SR-71 BlackGlider, as of 2026-08-07T11:23:21Z
 :toc: macro
 :toclevels: 2
 
@@ -8,9 +8,6 @@ _the No-Bullshit file: what we affirm was true and checkable at this moment._
 
 [NOTE]
 ====
-*This file is a template.* Replace the `{{…}}` placeholders and the `<…>` anchor
-fields, then re-run your project's own checks in the same session before signing.
-
 An *affirmation* is a solemn declaration of the truth of a statement, made by
 someone who _declines to swear an oath_ — our truth-as-best-believed at a stamped
 instant, binding on our honesty, not a claim of infallibility. It is the third of
@@ -23,26 +20,32 @@ the README / EXPLAINME / AFFIRMATION trio:
 | `EXPLAINME.adoc` | _How is it built, and what's the evidence?_ — engineering | descriptive / mechanism
 | *`AFFIRMATION.adoc`* (this file) | _What can we honestly affirm was *true and checkable* at a stamped moment?_ | a frozen instant, falsifiable
 |===
+
+*This file was itself a defect until 2026-08-07.* It shipped as an unfilled
+template: its title read `as of <UTC timestamp>`, its claims table held three
+`_e.g._` examples, and its anchor fields read `<full commit SHA at time of
+signing>`. The one document whose entire purpose is dated, evidence-backed,
+falsifiable claims made none. That is recorded as debt D-1 and is now closed.
 ====
 
 toc::[]
 
 == What this is, and how it works
 
-*What it is.* A short, dated, signed snapshot of what metadatastician can honestly and
+*What it is.* A short, dated snapshot of what metadatastician can honestly and
 verifiably claim about *SR-71 BlackGlider* at one exact commit. Nothing here is
 marketing and nothing is a promise about the future — those live in the README.
 This file is the receipt.
 
 *How it stays trustworthy.* Three moving parts:
 
-. *Ground truth, not memory.* Every claim below must be produced by _running the
-  project's own checks_ in the session that writes this file (build, tests,
-  typecheck, `just audit`). Where a status doc, the `Justfile`, or memory says
-  otherwise, the live run wins and the contradiction is flagged here.
-. *A frozen anchor.* The file names the exact commit SHA, branch, UTC timestamp,
-  and toolchain (see <<verifiable-anchor>>), so "true" always means "true _at
-  this point_". Move the SHA and this file is a draft until it is re-run.
+. *Ground truth, not memory.* Every claim below was produced by _running the
+  project's own checks_ in the session that wrote this file. Where a status doc,
+  the `Justfile`, or memory said otherwise, the live run won and the
+  contradiction is flagged — several are, in <<not-claimed>>.
+. *A frozen anchor.* The file names the exact commit, branch, UTC timestamp and
+  toolchain (see <<verifiable-anchor>>), so "true" always means "true _at this
+  point_". Move the SHA and this file is a draft until it is re-run.
 . *A real signature.* It is landed by a *signed git commit*; that signature over
   this content at the anchored SHA is what makes the affirmation tamper-evident
   and attributable — not the prose alone.
@@ -52,8 +55,8 @@ correctness. Treat it as a falsifiable claim, not gospel.
 
 == The epistemic contract (read this before you trust _or_ attack)
 
-This document records metadatastician's *best belief* at the timestamp below. It is
-*not a guarantee of correctness.* The only guarantee is *no intentional
+This document records metadatastician's *best belief* at the timestamp above. It
+is *not a guarantee of correctness.* The only guarantee is *no intentional
 overclaim*: where something is proven we say "proven"; where it is a documented
 trust boundary, an experiment, or an unwired module, we say so; where a claim is
 the README's aspiration rather than a checked result, we say so. An honest claim
@@ -62,20 +65,141 @@ that later turns out false is an *error to be fixed* — not a lie.
 *Standing invitation to refute.* You are invited to bulldoze any claim in this
 file. Bring a counter-example, a failing run, or a contradicting source.
 
-== What we affirm (fill in — delete the examples)
+This session did exactly that to itself: an adversarial review of the proof
+repair found *two defects introduced by the repair* — see
+<<caught-by-refutation>>. Both are recorded rather than quietly fixed, because
+the failure mode this project most needs to keep visible is a repair that
+weakens the thing it repairs.
 
-[cols="2,1,3",options="header"]
+== What we affirm
+
+Every row was produced by the command in its Evidence column, run in this
+working tree at the anchor below.
+
+[cols="3,1,3",options="header"]
 |===
-| Claim | Status | Evidence (command / `file:line`)
-| _e.g. The library builds clean_ | affirmed | `just build` at the anchor SHA
-| _e.g. The ABI seam typechecks_ | affirmed | `idris2 --typecheck abi.ipkg`
-| _e.g. Feature X is complete_ | aspiration | README §… (not yet checked)
+| Claim | Status | Evidence (command)
+
+| The Rust kernel builds clean with no external dependencies
+| affirmed
+| `cargo build --all-targets`; `Cargo.toml` declares no `[dependencies]`
+
+| The crate forbids unsafe code
+| affirmed
+| `src/lib.rs:7` — `#![forbid(unsafe_code)]`
+
+| All 12 constitutional obligations C1–C13 hold
+| affirmed
+| `cargo test --all-targets` → 6 pass in `tests/foundation.rs`, 6 in `tests/constitutional.rs`
+
+| The B3/S23 local rule is exactly right on *every* configuration
+| affirmed
+| C1 checks all 512/512 local configurations exhaustively
+
+| Evolution matches an independent oracle on *every* 4×4 world
+| affirmed
+| C8 checks all 65,536/65,536 worlds against a separately-written synchronous oracle
+
+| A genuine Snark reflection occurs and the glider recovers
+| affirmed
+| C2/C3/C4 — a 240-generation trace, not a scripted animation
+
+| Presentation cannot alter history
+| affirmed
+| C5 (rendering is observational), C13 (presentation inputs have no physical capability)
+
+| The Idris2 constitutional companion compiles, total and axiom-free
+| affirmed
+| `bash scripts/check-proofs.sh idris2` → `BlackGlider/Constitution.idr PASS`; `%default total`, no `believe_me`
+
+| All 7 Idris2 modules are gated and the quarantine list is empty
+| affirmed
+| `check-proofs.sh idris2` → 7/7 PASS, "all 7 .idr file(s) accounted for"
+
+| The shipped ABI seam typechecks as a package
+| affirmed
+| `idris2 --typecheck abi.ipkg` → exit 0 (3 modules under `src/interface/Abi/`)
+
+| Coq, Agda and Lean proof modules compile under their gates
+| affirmed
+| `check-proofs.sh {coq,agda,lean4}` → 1/1 PASS each
+
+| The Zig FFI seam builds and its tests pass
+| affirmed
+| `zig build test --summary all` in `src/interface/ffi/` → 11/11 tests, 5/5 steps
+
+| The golden path is green on this machine
+| affirmed
+| `just test && just quality` → exit 0
+
+| Every proof gate can actually FAIL
+| affirmed
+| Falsified by planting real defects: a type error in a gated module, an unlisted `.idr`, a missing import, a broken Zig test — each produced a non-zero exit
+
+| The dangerous-construct scan can actually FAIL
+| affirmed
+| Falsified by planting `sorry` in a Lean file — reported and failed
+
 |===
 
+[#caught-by-refutation]
+== What refutation caught in this very session
+
+Recorded because an affirmation that only lists successes is advertising.
+
+. *A repair that weakened a proof.* Restating `FieldAligned` as divisibility
+  without a `NonZero` conjunct admitted `alignment = 0`, and a complete
+  `CABICompliant` certificate could be built for a size-0/alignment-0 struct
+  that cannot exist in C. The phrasing it replaced could not even be _formed_ at
+  alignment 0 — uninhabitable, therefore stronger. A doc comment asserted the
+  exact opposite. *Fixed*: `NonZero` conjunct added; the attack is now rejected
+  (`Mismatch between: S ?x and 0`) while legal layouts still prove.
+. *A repair that cost the representation.* De-erasing proof witnesses
+  (quantity `0` → unrestricted) made `SafePtr` stop being newtype-transparent —
+  measured with `idris2 --codegen refc --dumpcases`, it became a two-field heap
+  object per pointer. *Fixed*: reverted; the correct repair was one character on
+  the *accessor* (`0 safePtrNeverNull`), which is what the shipped seam
+  `src/interface/Abi/Types.idr` already does.
+
+[#not-claimed]
 == What we do NOT claim
 
-* List the known gaps, trust boundaries, postulates, unwired modules, and stale
-  docs here. Silence is not affirmation — name what you have *not* verified.
+Silence is not affirmation. These are named because they are *not* verified.
+
+* *The Coq, Agda and Lean modules prove nothing about this project.* They are
+  verbatim RSR template exemplars — a toy `TyNat`/`TyBool` type system, list
+  append length preservation, a `Result` functor. They compile and they are
+  gated. Their green is a statement about the *gate*, not about Conway physics.
+  (Debt P-1.)
+* *No refinement connects the Idris2 model to the Rust kernel.* The constitution
+  is proved; the kernel is exhaustively tested; *nothing proves the two agree*.
+  A divergence would leave both ledgers green. (Debt P-2.)
+* *The Idris2 ABI modules prove properties of a model of a C ABI, not of the
+  shipped FFI.* `grep` finds no `CABICompliant`/`StructLayout` reference outside
+  `verification/proofs`; the only inhabitant is a fieldless empty struct. Do not
+  read them as "the C ABI is proven compliant". (Debt P-3.)
+* *Exhaustion is over finite domains.* 512/512 rules and 65,536/65,536 4×4
+  worlds are complete _for those domains_. Nothing establishes behaviour on
+  larger worlds beyond the 240-generation Snark trace. (Debt T-1.)
+* *`verification/proofs/tlaplus/StateMachine.tla` is checked by nothing* and
+  models a generic request pipeline unrelated to this project. (Debt P-4.)
+* *The renderer and the mission semantics do not exist.* `STATE.a2ml` records
+  25% complete. This is a proven foundation, not a game.
+* *Nothing is required to merge.* `.github/settings.yml` sets `contexts: []` and
+  probot/settings is not installed, so every gate is advisory. (Debt CI-2.)
+* *The new `proof-gate.yml` has not yet had a green run.* Until 2026-08-07 no
+  workflow ran any proof gate, the Zig tests, or `just test` — all of it was
+  enforced on one laptop. The workflow that fixes this is itself unproven until
+  it runs. (Debt CI-1, CI-3.)
+* *`reuse lint` fails* — 224 of 453 tracked files carry copyright information,
+  and an AGPL licence text ships in a repo that bans AGPL. (Debt L-1, L-2.)
+* *The Zig FFI is an unconsumed seam.* It compiles and tests, but exposes no
+  Conway concept and nothing in the kernel calls it. (Debt C-3.)
+
+The full register, with a reproducing command for every item, is
+link:DEBT.md[DEBT.md] — 28 items across licence, documentation, code, proof,
+test, CI/CD and supply chain, plus 7 defects inherited from the upstream
+template.
 
 [#verifiable-anchor]
 == Verifiable anchor
@@ -84,12 +208,15 @@ file. Bring a counter-example, a failing run, or a contradicting source.
 |===
 | Project | SR-71 BlackGlider
 | Repository | https://github.com/metadatastician/sr71-blackglider
-| Commit (SHA) | <full commit SHA at time of signing>
+| Base commit | `ce52d18d60907893a5953b2a3c91fdd89c332141`
+| Affirmed tree | the working tree landed by the commit that introduces this file (verify with `git show --stat HEAD`)
 | Branch | main
-| Timestamp (UTC) | <ISO-8601 UTC timestamp>
-| Toolchain | <compilers / provers / versions used to ground the claims>
+| Timestamp (UTC) | 2026-08-07T11:23:21Z
+| Toolchain | cargo 1.97.1 · rustc 1.97.1 · Idris2 0.7.0 · Coq 8.20.1 · Agda 2.6.4.3 · Lean 4.32.2 · zig 0.16.0 · just 1.56.0
 | Affirmed by | Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 |===
 
 _Landed by a signed git commit. Verify with `git log --show-signature` that the
-anchor SHA above matches the commit that introduced this affirmation._
+anchor above matches the commit that introduced this affirmation._
+
+_Re-run everything in the claims table with:_ `just test && just quality`.

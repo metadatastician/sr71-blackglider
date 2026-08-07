@@ -48,13 +48,33 @@ echo ""
 # ═══════════════════════════════════════════════════════════════════════
 bold "Aspect 1: SPDX license headers"
 
+# Enumerate via `git ls-files`, not a bare `find`.
+#
+# A bare `find src/` descends into build output. The moment the Zig FFI seam
+# gained a working build.zig (2026-08-04) this check went red on
+# src/interface/ffi/.zig-cache/**/dependencies.zig — a generated file that is
+# gitignored and can never carry an SPDX header. Enabling a real build must
+# not break an unrelated gate; the gate was asking the wrong question.
+#
+# `git ls-files` answers "what does this repository actually contain",
+# which is what a licence-header check means. The find fallback keeps the
+# script working outside a git work tree.
 MISSING_SPDX=0
-while IFS= read -r -d '' f; do
+SPDX_SCAN_EXTS='rs|zig|res|ex|exs|gleam|idr|sh'
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    SPDX_FILES=$(git ls-files -- 'src/*' | grep -E "\.($SPDX_SCAN_EXTS)$" || true)
+else
+    SPDX_FILES=$(find src/ -type f 2>/dev/null \
+        ! -path '*/.zig-cache/*' ! -path '*/zig-cache/*' ! -path '*/build/*' \
+        | grep -E "\.($SPDX_SCAN_EXTS)$" || true)
+fi
+while IFS= read -r f; do
+    [ -z "$f" ] && continue
     if ! head -5 "$f" | grep -q "SPDX-License-Identifier"; then
         warn "Missing SPDX header: $f"
         MISSING_SPDX=$((MISSING_SPDX + 1))
     fi
-done < <(find src/ -type f \( -name "*.rs" -o -name "*.zig" -o -name "*.res" -o -name "*.ex" -o -name "*.exs" -o -name "*.gleam" -o -name "*.idr" -o -name "*.sh" \) -print0 2>/dev/null)
+done <<< "$SPDX_FILES"
 
 if [ "$MISSING_SPDX" -eq 0 ]; then
     pass "All source files have SPDX headers"
@@ -67,34 +87,34 @@ fi
 # ═══════════════════════════════════════════════════════════════════════
 bold "Aspect 2: Dangerous patterns"
 
-# Idris2 dangerous patterns
-DANGEROUS_IDRIS=$(grep -rn 'believe_me\|assert_total\|really_believe_me' src/abi/ 2>/dev/null | grep -v "^Binary" | grep -v "test" || true)
-if [ -n "$DANGEROUS_IDRIS" ]; then
-    fail "Dangerous Idris2 patterns found:"
-    echo "$DANGEROUS_IDRIS" | head -5
-else
-    pass "No dangerous Idris2 patterns (believe_me, assert_total)"
-fi
-
-# Coq/Lean dangerous patterns.
+# Delegates to scripts/scan-dangerous.sh — the single implementation of
+# "which constructs escape a proof obligation, and where".
 #
-# Match the STATEMENT forms, not the words: `Admitted` is only dangerous as
-# the proof-ending statement `Admitted.` at statement position, and `sorry`
-# only inside Lean source on a non-comment line. The previous word-boundary
-# grep matched the phrase "NO Admitted allowed" inside TypeSafety.v's own
-# header comment — a rule matching its own prohibition text (the estate has
-# hit this comment-matching class before; TypeSafety.v compiles clean under
-# coqc with 1 Qed and zero admits, verified 2026-08-03).
-DANGEROUS_PROOF=$( { grep -rnE '^[[:space:]]*(Admitted|admit)\.' src/ verification/ --include='*.v' 2>/dev/null; \
-                     grep -rnE '\bsorry\b' src/ verification/ --include='*.lean' 2>/dev/null | grep -vE ':[0-9]+:[[:space:]]*--'; \
-                     grep -rn '\bunsafeCoerce\b\|\bObj\.magic\b' src/ verification/ \
-                          --include='*.hs' --include='*.ml' --include='*.mli' --include='*.lean' --include='*.idr' 2>/dev/null; } \
-                   | grep -v "test" || true)
-if [ -n "$DANGEROUS_PROOF" ]; then
-    fail "Dangerous proof patterns found:"
-    echo "$DANGEROUS_PROOF" | head -5
+# This aspect used to carry its own second copy of that rule, and the copy had
+# rotted in three independent ways:
+#
+#   1. The Idris2 arm grepped `src/abi/` — a path that has NEVER existed here
+#      (the sources are `src/interface/Abi/`, capital A, and
+#      `verification/proofs/idris2/`). grep on a missing directory matches
+#      nothing, so the check reported PASS unconditionally from the day it was
+#      written: a gate that could not fail, inside the file whose entire job is
+#      catching gates that cannot fail. Verified 2026-08-04:
+#      `ls -d src/abi/` -> No such file or directory.
+#   2. Both arms matched prose. The bare word `believe_me` hit the modules'
+#      own "no believe_me" header comments, and `Admitted` hit TypeSafety.v's
+#      "NO Admitted allowed" line — a rule tripping on its own prohibition.
+#   3. The final `| grep -v "test"` discarded every finding whose PATH contains
+#      "test", so a `sorry` anywhere under tests/ was silently invisible.
+#
+# scan-dangerous.sh already solves all three properly: it blanks comment
+# bodies in place (line + block comments, per language) before matching, and
+# covers seven constructs across Idris2/Lean4/Agda/Coq rather than this copy's
+# three. Two implementations of one rule is how the weaker one ends up being
+# the one that runs — so there is now one, and this calls it.
+if bash "$PROJECT_DIR/scripts/scan-dangerous.sh"; then
+    pass "No dangerous constructs used in proof code (scan-dangerous.sh)"
 else
-    pass "No dangerous proof patterns (Admitted, sorry, unsafeCoerce)"
+    fail "Dangerous constructs found in proof code — see scan-dangerous.sh output above"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════

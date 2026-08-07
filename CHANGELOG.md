@@ -32,9 +32,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   finite mission.
 - Assigned the maintainer-selected primary clade `fv` — Formal Verification &
   Proofs.
+- Wired Coq, Agda and Lean4 proof gates for the first time (2026-08-07).
+  `scripts/check-proofs.sh` previously ran only `idris2`; the Coq, Agda and
+  Lean modules were declared but nothing checked them. Now 10 modules are
+  gated in total: 7 Idris2, 1 Coq (`TypeSafety.v`), 1 Agda
+  (`Properties.agda`), 1 Lean (`ApiTypes.lean`).
+- Gated the shipped Idris2 ABI seam via `idris2 --typecheck abi.ipkg`
+  (`src/interface/Abi/{Types,Layout,Foreign}.idr`). These are the three modules
+  the FFI actually depends on, and no gate had checked them; `check-proofs.sh`
+  covers only `verification/proofs/idris2/`.
+- Added `.github/workflows/proof-gate.yml`, one job per prover, each installing
+  its own toolchain. Before this, **no** workflow in the repository invoked
+  `check-proofs.sh`, `just test`, or the Zig FFI tests. The only CI path
+  touching the proofs was `e2e.yml`, whose prover loop was wrapped in
+  `command -v <tool> || skip` while no workflow installed any prover — on a
+  bare runner that scored PASS=0 FAIL=0 SKIP=4 and exited 0. Every proof and
+  every Zig test had been enforced on one laptop and nowhere else.
+- Added a root-level `DEBT.md` register recording what remains unwired,
+  stubbed, ungated or unimplemented, and linked it from `README.adoc`.
+
+### Changed
+
+- Lowered the README status badge from `foundation_proven` to
+  `foundation_exhaustively_tested`, and added a "What is verified today"
+  section carrying the measured gate results alongside their limits. "Proven"
+  over-read the evidence: the Rust results are exhaustive over stated finite
+  domains (512/512 local rule configurations, 65,536/65,536 four-by-four
+  worlds) or bounded traces (240 generations), not proofs over unbounded
+  domains.
+- Made `just bench` and `just readiness` fail with an explicit
+  "NOT IMPLEMENTED" message and a non-zero exit, rather than reporting success.
+  `benches/template_bench.sh` times a test file that no longer exists and
+  discards every exit code.
 
 ### Fixed
 
 - Rescued the repository from an uncommitted working tree (2026-08-03):
   reconciled stray worktree copies, filled PROOF-STATUS and READINESS from
   measured gate runs, and removed template residue.
+- Emptied the proof quarantine (2026-08-07). All five quarantined Idris2
+  modules and the quarantined Lean module were repaired and promoted to gated.
+  The root causes were distinct: missing `Data.Nat` imports; `lteRefl` absent
+  from idris2 0.7.0; proof accessors declared at runtime quantity rather than
+  0; `SIsNonZero` unable to unify with a non-literal alignment (restated as
+  `NonZero` plus divisibility); a positivity-checker limitation on a type
+  synonym; and, in Lean, a binder named `max` that can never auto-bind because
+  `max` is a global function.
+- Corrected two defects that the proof repair itself introduced, both found by
+  adversarial review of the repair and both fixed:
+  - Restating the alignment constraint as divisibility **without** a `NonZero`
+    conjunct was strictly *weaker* than the `mod` phrasing it replaced. At
+    alignment 0 a complete `CABICompliant` certificate could be constructed for
+    a size-0, alignment-0 struct that cannot exist in C. The `NonZero` conjunct
+    was added; the attack is now rejected ("Mismatch between: S ?x and 0")
+    while legal layouts still prove.
+  - De-erasing proof witnesses (quantity 0 to unrestricted) cost the
+    newtype-transparent representation. Measured with `--dumpcases`, `SafePtr`
+    went from a bare `Bits64` to a two-field heap object per pointer. This was
+    reverted; the correct repair was one character on the *accessor*
+    (`0 safePtrNeverNull`), matching the shipped seam
+    `src/interface/Abi/Types.idr`, which already uses an erased witness.
+- Repaired the Zig FFI build. `build.zig` was empty scaffolding, so
+  `zig build` exited 0 having compiled nothing, hiding three genuine compile
+  errors in `main.zig`: an opaque type declared with fields; `c_allocator`
+  without `link_libc`; and `callconv(.C)` renamed to `.c` in Zig 0.16. The
+  build now runs 11 tests across 5 steps (3 inline unit tests in
+  `src/main.zig`, 8 integration tests in `test/integration_test.zig`).
+- Repaired seven gates that could not fail, each falsified against a real
+  violation before being declared fixed:
+  - `tests/aspect_tests.sh` scanned `src/abi/`, a path that has never existed
+    in this repository, so it always passed; its SPDX scan also walked the
+    gitignored `.zig-cache/`.
+  - `just assail` exited 0 both when the tool was missing and when the scan
+    failed.
+  - `just install-hooks` wrote to `.git/hooks/`, which is dead under
+    `core.hooksPath=.githooks`.
+  - `just validate-state` printed `INVALID` and exited 0.
+  - `just test-all` announced "safe to merge" while 3 of its 5 dependencies
+    were echo-only stubs.
+  - `just crg-grade` and `just crg-badge` were hard syntax errors — Makefile
+    `$$` escaping carried into a Justfile — reading a file that does not exist.
+- Corrected `.github/settings.yml`, which required a phantom status context
+  `estate-audit` that nothing emits, plus an approving review a solo maintainer
+  cannot give, with `enforce_admins` set. In combination this described a
+  branch nothing could ever merge into.

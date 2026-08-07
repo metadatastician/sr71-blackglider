@@ -7,7 +7,7 @@
 image:https://img.shields.io/badge/Code-MPL--2.0-blue.svg?logo=mozilla[Code licence: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
 image:https://img.shields.io/badge/Docs-CC--BY--SA--4.0-blue.svg?logo=creativecommons[Docs licence: CC-BY-SA-4.0,link="https://creativecommons.org/licenses/by-sa/4.0/"]
 image:https://img.shields.io/badge/RSR-Rhodium_Standard-9C27B0[Rhodium Standard Repository,link="https://github.com/hyperpolymath/rhodium-standard-repositories"]
-image:https://img.shields.io/badge/status-foundation_proven-blue[Foundation proven]
+image:https://img.shields.io/badge/status-foundation_exhaustively_tested-blue[Foundation exhaustively tested]
 
 _Conway evolves the flight. BlackGlider renders the history._
 
@@ -19,8 +19,8 @@ but they may never author it.
 
 [IMPORTANT]
 ====
-This repository currently proves the architectural foundation; it is not yet a
-complete game. The executable spike contains an exact B3/S23 kernel, a genuine
+This repository establishes and gates the architectural foundation; it is not
+yet a complete game. The executable spike contains an exact B3/S23 kernel, a genuine
 stable-reflector turn, causal counterfactual measurement, and a curved flight
 embedding demonstrated unable to change the canonical history.
 ====
@@ -67,7 +67,7 @@ For a fixed initial pattern `G₀`, every canonical state is exactly
 embedding and every post-launch user input.
 ____
 
-== What has already been proved
+== What the foundation establishes
 
 The foundation tests currently establish:
 
@@ -98,19 +98,103 @@ exhaustive over stated finite domains or bounded traces. There is not yet a
 machine-checked refinement proof that the Rust implementation is the Idris2
 model, nor a proof about the compiled executable.
 
-Run the evidence:
+== What is verified today
+
+Measured on 2026-08-07 by running each tool in a clean working tree. Every
+figure below is a tool output, not a status-file assertion.
+
+[cols="2,1,4"]
+|===
+| Gate | Result | What it actually covers
+
+| `cargo test --all-targets`
+| 12/12 pass
+| Constitutional obligations C1–C7 (`tests/foundation.rs`) and C8–C13
+  (`tests/constitutional.rs`). 613 LOC of kernel across `src/*.rs`, 357 LOC of
+  tests. The crate is `#![forbid(unsafe_code)]` and has *zero* external
+  dependencies. There are no unit tests inside `src/lib.rs`.
+
+| `zig build test` (in `src/interface/ffi/`)
+| 11/11 tests, 5/5 steps
+| 3 inline unit tests in `src/main.zig`, 8 integration tests in
+  `test/integration_test.zig`.
+
+| `idris2 --typecheck abi.ipkg`
+| PASS
+| The *shipped* ABI seam — three modules under `src/interface/Abi/`
+  (`Types.idr`, `Layout.idr`, `Foreign.idr`). This is the one Idris2 artefact
+  the FFI depends on.
+
+| `scripts/check-proofs.sh {idris2,coq,agda,lean4}`
+| PASS, 10 gated modules
+| 7 Idris2 (Idris2 0.7.0), 1 Coq (coqc 8.20.1), 1 Agda (2.6.4.3), 1 Lean
+  (4.32.2). The quarantine list is empty: no module is recorded as
+  known-broken.
+
+| `tests/aspect_tests.sh`
+| PASS
+| SPDX header coverage and a dangerous-construct scan over proof code.
+|===
+
+=== What those numbers do *not* mean
+
+Read the caveats with the same weight as the counts.
+
+* *The Rust coverage is exhaustive, not general.* 512/512 local B3/S23 rule
+  configurations and 65,536/65,536 four-by-four worlds are proofs *by
+  exhaustion over a stated finite domain*. The Snark result is a single
+  240-generation trace. None of these is a proof over unbounded worlds or
+  unbounded time.
+* *Three of the four prover suites are template exemplars.* The Coq
+  (`TypeSafety.v`), Agda (`Properties.agda`) and Lean (`ApiTypes.lean`) modules
+  are verbatim RSR template stubs — a toy type system, list-append length, and
+  a `Result` functor. They compile and they are gated, and they prove *nothing*
+  about Conway physics. Their green must not be read as domain verification.
+  The Idris2 `MANIFEST` already records this for `Types.idr`.
+* *No refinement connects the model to the implementation.* The Idris2 proofs
+  and the Rust kernel are verified separately; nothing machine-checked
+  establishes that they agree, and nothing is proved about the compiled
+  executable.
+* *The Idris2 ABI modules constrain a model, not the shipped FFI.* `grep` finds
+  no reference to `CABICompliant` or `StructLayout` outside
+  `verification/proofs/` and `src/interface/Abi/`; the only inhabitant is a
+  fieldless empty struct. No Rust or Zig type is presented to the certificate.
+* *The renderer and the mission semantics do not exist.* `STATE.a2ml` records
+  25% complete. There is no playable level, no production renderer and no
+  control semantics.
+* *`verification/proofs/tlaplus/StateMachine.tla` is unwired* — `check-proofs.sh`
+  supports only `idris2|lean4|agda|coq` — and is an uninstantiated template
+  modelling a generic request pipeline, irrelevant to this project.
+
+=== Why the badge no longer says "foundation proven"
+
+It previously did. The label has been lowered to *foundation exhaustively
+tested* because "proven" over-reads the evidence: some obligations really are
+proofs by exhaustion, but C2–C4 rest on one bounded trace, C8 covers only four-by-four
+worlds for one generation, and the three non-Idris2 prover gates carry no
+domain content at all. The foundation is green and the green is real; it is not
+a general proof, and the badge should not imply one.
+
+Run the evidence yourself — this is the golden path for humans and agents alike:
 
 [source,bash]
 ----
-just test
-just quality
+just test && just quality
 ----
+
+`just test` runs the Rust suite, the Zig FFI tests, the shipped ABI seam
+typecheck, and all four `check-proofs.sh` gates. `just quality` runs
+`fmt-check`, `lint` and the test suite again. An absent prover toolchain is
+*fatal* by design: a gate that cannot run must never report OK.
 
 See link:MATHEMATICAL-CONTRACT.md[the mathematical contract],
 link:ARCHITECTURE.md[the one-way architecture], and
 link:VERIFICATION.md[the claim ledger].
 link:PROOF-ROADMAP.md[The proof frontier] states how far verification can
 usefully go before a finite mission must be engineered and frozen.
+link:DEBT.md[The debt register] is the honest inventory of what is unwired,
+stubbed, ungated or unimplemented, and is the right place to look before
+trusting any green signal here.
 
 == Flight geometry
 
@@ -171,12 +255,14 @@ proof-bearing contract.
 == AI-Assisted Installation
 
 AI assistance is optional and confers no authority to weaken the mathematical
-contract. Humans and agents use the same local golden path: `just test`, then
-`just quality`. `just test` checks both the Rust evidence and every gated Idris2
-module. An assisting agent must read `0-AI-MANIFEST.a2ml`, the
-machine-readable identity and policy files, `MATHEMATICAL-CONTRACT.md`, and
-`VERIFICATION.md` before changing the project. It must not upload code or local
-context to an external service without the maintainer's informed choice.
+contract. Humans and agents use the same local golden path:
+`just test && just quality`. `just test` checks the Rust evidence, the Zig FFI
+tests, the shipped Idris2 ABI seam, and every gated module across all four
+provers. An assisting agent must read `0-AI-MANIFEST.a2ml`, the
+machine-readable identity and policy files, `MATHEMATICAL-CONTRACT.md`,
+`VERIFICATION.md`, and link:DEBT.md[DEBT.md] before changing the project. It
+must not upload code or local context to an external service without the
+maintainer's informed choice.
 
 The complete protocol and privacy boundary are in
 link:docs/AI_INSTALLATION_GUIDE.adoc[the AI-assisted installation guide].

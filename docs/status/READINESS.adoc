@@ -3,11 +3,11 @@
 = SR-71 BlackGlider Component Readiness Assessment
 
 *Standard:* link:https://github.com/metadatastician/standards/tree/main/component-readiness-grades[Component Readiness Grades (CRG) v2.0 STRICT] +
-*Assessed:* 2026-08-03 +
-*Assessor:* Claude (rescue workup), evidence from local gate runs +
-*Previous assessment:* none
+*Assessed:* 2026-08-07 +
+*Assessor:* Claude (post-repair re-assessment), every figure below re-run in the working tree on the assessment date +
+*Previous assessment:* 2026-08-03 — grade *E*
 
-*Current Grade:* E
+*Current Grade:* D
 
 This line is parsed by `just crg-grade` / `just crg-badge`. The grade above is
 the worst-graded in-scope component — *the project's weakest link sets its
@@ -18,6 +18,27 @@ grade*. See the per-component table in §3.
 *Honest grading.* Per CRG v2.0 Principle 4: grade as-is today, not
 aspirationally. Long alpha is discipline, not shame. Demote immediately if
 evidence doesn't support the claim.
+====
+
+[IMPORTANT]
+====
+*This is a one-grade promotion, E → D, and it stops there.* The two facts that
+justified E on 2026-08-03 — "Zig FFI has no tests" and "ABI proofs
+quarantined" — were re-tested on 2026-08-07 and are both false: the Zig seam
+runs 11 tests over 5 build steps, and the Idris2 quarantine list is empty with
+all 7 modules gated and compiling. That clears the *D* evidence gate for every
+component in §3.
+
+It does not come close to C. C additionally requires an evidence window of
+dogfooding with no known failures, deep per-file and per-directory annotation,
+and a populated `[dogfooding-status]`. Measured today: there is *no*
+`docs/practice/DOGFOOD-LOG.adoc`, `STATE.a2ml` contains *no*
+`[dogfooding-status]` key at all, and *22 of the 25* per-directory READMEs
+under `src/`, `verification/` and `tests/` are three-line title-only stubs
+(SPDX line, copyright line, one `= Heading`). The gap to C is measured in
+months of use, not in one more repair pass.
+
+The promotion is also *conditional* in two named places — see §7.
 ====
 
 '''
@@ -57,22 +78,81 @@ evidence doesn't support the claim.
 *Publication gate:* non-abstract implementation claims require *B+*.
 Below B, any publication must be explicitly abstract or provisional.
 
+=== 1.1 Gate-by-gate ruling for this assessment
+
+Reasoning from the gates rather than from the two cleared blockers:
+
+[cols="2,1,4", options="header"]
+|===
+| D-gate clause | Met? | Measured basis
+
+| RSR-compliant
+| Yes, with one stale checker
+| 27 workflow files present; 21 distinct workflows have executed on `main`, all
+  `success` or deliberately `skipped` at 2026-08-06T13:05Z (Rust CI, Governance,
+  Hypatia, Secret Scanner, SonarQube, Static Analysis, Estate Rules, Guix Policy,
+  OpenSSF Compliance, Workflow Linter, blockers, Code Quality, Dogfood Gate,
+  Security Policy) plus OSSF Scorecard `success` 2026-08-07T05:25Z.
+  `tests/aspect_tests.sh` PASS=2 FAIL=0. Counter-evidence: the ungated
+  `scripts/validate-template.sh` reports 1 error / 5 warnings — the error is
+  `Required workflow missing: codeql.yml`, a file deliberately deleted in commit
+  `ce52d18` when GitHub default CodeQL setup took over. The script is stale, not
+  the repository; it is nevertheless a red checker sitting in-tree.
+
+| Per-capability tests
+| 7 of 8 declared capabilities
+| `.machine_readable/rsr-profile.a2ml` declares `["rust", "library", "idris2",
+  "formal-proofs", "zig", "ffi", "abi", "reproducible-build"]`. Tested today:
+  rust/library (12 Rust tests), idris2/formal-proofs (10 gated modules across 4
+  provers + a 3-module shipped seam), zig/ffi/abi (11 Zig tests).
+  *Untested: `reproducible-build`* — see the note under §3.
+
+| Documented scope
+| Yes
+| `MATHEMATICAL-CONTRACT.md`, `VERIFICATION.md`, `PROOF-ROADMAP.md`,
+  `README.adoc`, and the IS / IS-NOT boundary in `CLADE.a2ml`.
+
+| Test matrix citing counts, in STATE.a2ml or CI
+| Partial
+| The Rust matrix lives in CI and has run green (`Rust CI`, `main`,
+  2026-08-06). The proof and Zig matrix lives only in
+  `.github/workflows/proof-gate.yml`, which is *untracked* — it exists on disk
+  and has never been committed, pushed, or executed. `STATE.a2ml` carries no
+  test matrix and no counts at all (`last-updated = "2026-08-01"`).
+|===
+
+*Ruling.* Four gate clauses, two fully met, two met with a named, specific,
+actionable shortfall. That pattern is the literal definition of grade D —
+"Partial / Inconsistent" — and it is decisively past E, "Minimal /
+Salvageable": 23 executable tests, exhaustive coverage of 66,048 finite
+configurations, and 10 machine-checked proof modules is not a minimal artefact.
+The shortfalls are recorded as conditions in §7, not waived.
+
 '''
 
-== 2. Headline Evidence (as of 2026-08-03, all gates run locally)
+== 2. Headline Evidence (as of 2026-08-07, every row re-run on that date)
 
 [cols="2,3,3", options="header"]
 |===
 | Metric | Value | Source
 
-| Test count | 12/12 green (6 foundation C1–C7 + 6 constitutional C8–C13) | `cargo test --all-targets`, 2026-08-03
-| Formal-verification posture | 2 gated Idris2 modules compile (`%default total`, 0 `believe_me`); 5 quarantined known-broken per MANIFEST | `bash scripts/check-proofs.sh idris2`, 2026-08-03
-| Dangerous patterns (`assert_total`, `unsafeCoerce`, unsafe Rust) | 0 in gated proofs; crate is `#![forbid(unsafe_code)]` | grep 2026-08-03
-| Per-unit README coverage | Not measured (C-gate work; see §4) | —
-| CI status | Never run — repo pushed 2026-08-03 into the estate-wide Actions `startup_failure` outage; all verification local | `.github/workflows/`
-| RSR mandatory workflows | 27 present, 0 ever executed | `.github/workflows/`
-| Third-party badges (if any) | None minted (SonarCloud project, OpenSSF BP not registered) | external
-| LIVE deployment (if any) | None | —
+| Rust test count | 12/12 green (6 foundation C1–C7 + 6 constitutional C8–C13); 0 unit tests defined in `src/` | `cargo test --all-targets`, 2026-08-07
+| Rust coverage character | Exhaustive over stated finite domains: 512/512 local B3/S23 rule configurations, 65,536/65,536 4×4 worlds against an independent synchronous oracle, one 240-generation Snark reflector trace. These are proofs *by exhaustion over a stated finite domain*, not formal proofs over unbounded domains. | `tests/foundation.rs`, `tests/constitutional.rs`, 2026-08-07
+| Zig FFI test count | 11/11 tests green, 5/5 build steps (3 inline unit tests in `src/main.zig`, 8 in `test/integration_test.zig`) | `zig build test --summary all` in `src/interface/ffi/`, zig 0.16.0, 2026-08-07
+| Gated proof modules | 10 across 4 provers, quarantine empty: 7 Idris2 (`ABI/Foreign`, `ABI/Layout`, `ABI/Platform`, `ABI/Pointers`, `ABI/Compliance`, `BlackGlider/Constitution`, `Types`), 1 Coq (`TypeSafety.v`), 1 Agda (`Properties.agda`), 1 Lean4 (`ApiTypes.lean`) | `scripts/check-proofs.sh {idris2,coq,agda,lean4}` all PASS, 2026-08-07
+| Shipped ABI seam | PASS — 3 modules typecheck as a package (`src/interface/Abi/{Types,Layout,Foreign}.idr`, 323 LOC) | `idris2 --typecheck abi.ipkg`, 2026-08-07
+| *Domain relevance of the proofs* | *Mixed, and this must not be read as domain verification.* Only `BlackGlider/Constitution.idr` (163 LOC) proves anything about Conway physics. The Coq, Agda and Lean modules (73 + 37 + 51 = 161 LOC) are *verbatim RSR template exemplars* — a toy expression-language type system, list-append length, a Result functor — and their own headers say "Replace with your project's…". They compile; they prove nothing about this project. | `head` of each module, 2026-08-07
+| Source size | 613 LOC across `src/*.rs` (life 204, glider 121, embedding 111, certificate 97, input 51, patterns 15, lib 14); 357 LOC of Rust tests; 392 LOC of Zig; 683 LOC of Idris2 (360 proof-set + 323 shipped seam) | `wc -l`, 2026-08-07
+| Dangerous patterns (`assert_total`, `unsafeCoerce`, `believe_me`, `sorry`, `Admitted`, `postulate`, unsafe Rust) | 0 in gated proofs; crate is `#![forbid(unsafe_code)]` with zero external dependencies | `tests/aspect_tests.sh` PASS, 2026-08-07
+| Per-directory README depth | *Measured, and thin*: 22 of 25 READMEs under `src/`, `verification/`, `tests/` are 3-line title-only stubs. Only 3 carry content (`tests/fuzz` 112, `verification/proofs` 60, `src/aspects` 56). | `wc -l` over `find … -name README.adoc`, 2026-08-07
+| Per-file annotation depth | Partial: `life.rs` and `input.rs` carry purpose/boundary doc comments; `glider.rs` and `certificate.rs` open straight into `use` declarations with no module header. | inspection, 2026-08-07
+| CI status | *No longer "never run".* 21 distinct workflows have executed on `main`; latest results all `success` (or `skipped` by design: BoJ Server Build, Mirror) at 2026-08-06T13:05Z, plus OSSF Scorecard `success` 2026-08-07T05:25Z. GitHub Pages last ran `cancelled`. | `gh run list`, 2026-08-07
+| CI coverage of the proof estate | *Zero.* No committed workflow invokes `scripts/check-proofs.sh`, `just test`, or the Zig tests. `.github/workflows/proof-gate.yml` does exactly this and is *untracked* — never committed, never run. Until it is committed, every proof and every Zig test in this document is enforced on one laptop and nowhere else. | `git status`, `gh run list`, 2026-08-07
+| Declared-but-untested capability | `reproducible-build`. `build/guix.scm` exists; `guix` is not installed here; `guix-policy.yml` is a *presence-and-Nix-ban* check that never builds anything; and `just guix-shell` / `just guix-build` both point at `guix.scm` at the repository root, where no such file exists. No reproducible build has ever been executed or verified. | `Justfile:451-456`, `find`, `command -v guix`, 2026-08-07
+| Refinement between proofs and code | *None.* No machine-checked refinement connects the Idris2 model to the Rust kernel or to the Zig FFI. They are verified separately; nothing proves they agree. | `PROOF-ROADMAP.md` + grep, 2026-08-07
+| TLA+ | `verification/proofs/tlaplus/StateMachine.tla` is unwired by every gate (`check-proofs.sh` supports only `idris2\|lean4\|agda\|coq`) *and* is an uninstantiated template modelling a generic request pipeline, irrelevant to this project. No TLA+ toolchain installed. | `scripts/check-proofs.sh`, 2026-08-07
+| Third-party badges | None minted. No `SONAR_TOKEN` secret; SonarCloud project not created; OpenSSF Best Practices not registered. | external
+| LIVE deployment | None. Presentation/renderer layer and mission semantics do not exist. | `STATE.a2ml` records 25% complete
 |===
 
 '''
@@ -87,15 +167,33 @@ unless noted.
 |===
 | Component | Grade | Posture | Evidence Summary | Promotion blocker | Last Assessed
 
-| Rust B3/S23 kernel + certificates (`src/life.rs`, `glider.rs`, `embedding.rs`, `certificate.rs`, ~970 LOC) | D | alpha-unstable | 12/12 exhaustive tests green: 512/512 local rules, 65,536/65,536 4×4 oracle worlds, 240-gen Snark trace, C1–C13 | Dogfooding window + per-file/per-directory annotation (D→C gate) | 2026-08-03
-| Idris2 constitutional companion (`verification/proofs/idris2/BlackGlider/Constitution.idr`) | D | alpha-unstable | Compiles total & constructive under MANIFEST gate; wired into `just test` | Same C gate as kernel; also extend beyond current equation set | 2026-08-03
-| Idris2 ABI proof set (`verification/proofs/idris2/ABI/`, 4 of 5 modules quarantined) | E | pre-alpha | Only Foreign.idr compiles; Layout/Platform/Pointers/Compliance quarantined with recorded reasons | Fix Data.Nat imports + the two genuine unification failures, un-quarantine | 2026-08-03
-| Zig FFI scaffold (`src/interface/ffi/`) | E | pre-alpha | `zig build` exits 0 (zig 0.16.0); no test step; not wired into `just test` | Add tests, wire into golden path — or remove the scaffold until the seam is needed | 2026-08-03
+| Rust B3/S23 kernel + certificates (`src/life.rs` 204, `glider.rs` 121, `embedding.rs` 111, `certificate.rs` 97 = 533 LOC of the 613 LOC in `src/`) | D | alpha-unstable | 12/12 tests green under `cargo test --all-targets`: 512/512 local rules, 65,536/65,536 4×4 oracle worlds, a 240-generation Snark trace, obligations C1–C13. `#![forbid(unsafe_code)]`, zero external dependencies. Matrix runs in CI (`Rust CI` green on `main`, 2026-08-06). | *D→C:* start a dogfooding window and log it; write real per-directory READMEs (`src/` is a 3-line stub) and module headers for `glider.rs` / `certificate.rs`; populate `STATE.a2ml [dogfooding-status]`. | 2026-08-07
+| Idris2 constitutional companion (`verification/proofs/idris2/BlackGlider/Constitution.idr`, 163 LOC) | D | alpha-unstable | Gated and compiling under `check-proofs.sh idris2` (PASS, idris2 0.7.0). The *only* proof module in the tree with genuine project-domain content: legal B3/S23 centre/count domain, exact chart headings, deterministic evolution, observer exclusion, causal radius. `%default total`, 0 dangerous constructs. | *Wiring:* commit `proof-gate.yml` — this gate has never run off this laptop. *D→C:* same dogfooding + annotation gate as the kernel. Also: nothing machine-checks that these equations describe the Rust kernel that ships. | 2026-08-07
+| Idris2 ABI proof set (`verification/proofs/idris2/ABI/` — Foreign 53, Layout 87, Platform 70, Pointers 91, Compliance 59 = 360 LOC) | D | alpha-unstable | *Quarantine is empty* — all 5 modules repaired 2026-08-04 and gated; `check-proofs.sh idris2` PASS with manifest coverage complete (7/7 `.idr` accounted for). Repairs were adversarially reviewed and two introduced defects were caught and fixed (a divisibility restatement weaker than the mod phrasing it replaced at alignment 0; a de-erased witness that cost the newtype-transparent `SafePtr` representation, confirmed with `--dumpcases`). | *Relevance, not compilation.* These prove properties of a *model* of a C ABI, not of the shipped seam: grep confirms nothing outside `verification/` references `CABICompliant` or `StructLayout` from this set, and its only `CABICompliant` inhabitant is `MkLayout "empty" [] 1 1` — a fieldless empty struct. Connect it to `src/interface/Abi/`, or fold it in and retire the duplicate. | 2026-08-07
+| Shipped ABI seam (`src/interface/Abi/Types.idr` 112, `Layout.idr` 128, `Foreign.idr` 83 = 323 LOC) | D | alpha-unstable | `idris2 --typecheck abi.ipkg` PASS as a package. This is the artefact with an actual downstream consumer — the Zig FFI is written against it — and it uses an erased (quantity-0) non-null witness, so `SafePtr` keeps its transparent representation. Until 2026-08-07 it was gated by nothing: `check-proofs.sh` only scans `verification/proofs/idris2`. | *No conformance test binds it to the Zig.* Nothing checks that the exports in `src/interface/ffi/src/main.zig` match these declarations; the Zig header even cites `src/abi/Foreign.idr`, a path that has never existed in this repository's history. Add a cross-language conformance check. | 2026-08-07
+| Zig FFI seam (`src/interface/ffi/` — `src/main.zig` 278, `test/integration_test.zig` 75, `build.zig` 39) | D | alpha-unstable | 11/11 tests, 5/5 build steps, zig 0.16.0. `build.zig` was empty scaffolding until 2026-08-04, so `zig build` exited 0 having compiled nothing and hid three genuine compile errors (`opaque` type declared with fields; `c_allocator` without `link_libc`; `callconv(.C)` renamed to `.c` in Zig 0.16). All three fixed; the seam now builds and is exercised. | *It is tested, but it exposes nothing of this project.* The surface under test is the template lifecycle — `init` / `free` / version / last-error — with `// Add your fields here` still in `Handle`. `Cargo.toml` declares no `crate-type`, so the crate builds as an rlib only and the Zig seam *cannot* reach the kernel. Give it a real capability to carry before grading it further. | 2026-08-07
 |===
 
-The presentation/gameplay layer (the actual flight experience) does not exist
-yet and is therefore not an in-scope component; STATE.a2ml records the project
-at 25% complete. It enters this table when its first code lands.
+[NOTE]
+====
+*One declared capability has no row and no test.* `rsr-profile.a2ml` declares
+`reproducible-build`. There is no component to grade because nothing has ever
+been built reproducibly: `guix` is absent from this machine, `guix-policy.yml`
+only checks that a `.scm` file exists and that no `.nix` file does, and
+`just guix-shell` / `just guix-build` reference `guix.scm` at the repository
+root while the file actually lives at `build/guix.scm`. This is a declared
+capability without evidence and is the single clearest D-gate residual.
+Fix the two Justfile paths and gate a real `guix build`, *or* remove
+`reproducible-build` from the declared capability list. Do not leave it
+declared and unbuilt.
+====
+
+The presentation/renderer layer (the actual flight experience) and the
+Life-native mission and control semantics do not exist yet and are therefore
+not in-scope components; `STATE.a2ml` records the renderer at 10% and mission
+semantics at 0%, project 25% complete. They enter this table when their first
+code lands. `PROOF-ROADMAP.md` names a small, frozen mission specification as
+the next real step.
 
 *Rules of thumb for populating this table:*
 
@@ -111,36 +209,56 @@ at 25% complete. It enters this table when its first code lands.
 
 == 4. What's Needed for D → C
 
-CRG v2.0 requires two new pieces of evidence on top of D:
+CRG v2.0 requires two new pieces of evidence on top of D. Neither has *any*
+evidence today; both are measured below rather than asserted.
 
 . *Active dogfooding in home context with no known home-context failures.*
-** Start date: not started (no dogfood-log entries yet).
+** Start date: *not started*. `docs/practice/DOGFOOD-LOG.adoc` does not exist
+   (`docs/practice/` holds only the AI manifest, AI-CONVENTIONS, a CI-cost
+   note, a README and a state-visualiser guide).
+** `STATE.a2ml` contains *no* `[dogfooding-status]` key — grep returns nothing
+   for `dogfooding-status`, `external-targets`, `issues-fed-back` or
+   `field-signal`. The file was last updated 2026-08-01 and records
+   `last-result = "warn"`.
 ** Home context: authoring and replaying genuine Conway missions through the
    kernel and certificates — i.e. using the foundation to build the game it
-   exists for.
+   exists for. This *cannot start* until the frozen mission specification named
+   in `PROOF-ROADMAP.md` exists; there is currently nothing to dogfood with.
 ** "No known failures" is a moving claim — must hold continuously across
    the evidence window (recommended: 4 weeks, daily use).
 ** Populate `STATE.a2ml [dogfooding-status]` with one entry per capability:
    `capability = "done — <concrete evidence>"`.
 
 . *Deep code and folder annotation.*
-** Per-directory orientation READMEs in every non-trivial source subtree.
+** *Measured 2026-08-07:* 22 of the 25 `README.adoc` files under `src/`,
+   `verification/` and `tests/` are three lines long — an SPDX line, a
+   copyright line, and a bare heading such as `= ffi Logic` or `= src Pillar`.
+   Only `tests/fuzz/README.adoc` (112), `verification/proofs/README.adoc` (60)
+   and `src/aspects/README.adoc` (56) carry content. That is 3/25 = 12%
+   orientation coverage, and title-only stubs do not count.
 ** Per-file header comments: purpose, boundaries, invariants,
-   execution/test/proof surface.
+   execution/test/proof surface. Partial today — `src/life.rs` and
+   `src/input.rs` state their boundaries well; `src/glider.rs` and
+   `src/certificate.rs` have no module-level header at all.
 ** Per-unit (cartridge/panel/plugin/module) README covering: purpose,
    tools, architecture-at-a-glance, build steps. Overview-level alone is
    not sufficient — depth is required where a reviewer would otherwise
    have to read source to orient.
 
-*Minimum first-ring targets for C promotion:* list the trunk components
-here. If these aren't C, nothing else can be.
+*Minimum first-ring targets for C promotion:* the Rust kernel and the Idris2
+constitutional companion. If these two are not C, nothing else can be.
 
 '''
 
 == 5. What's Needed for C → B
 
 Six *genuinely diverse* external targets with feedback fed back into the
-component. Candidate diversity axes:
+component. *There are currently zero external consumers of this repository, and
+no mechanism by which one could consume it* — the crate publishes no `crate-type`
+for a C ABI, no package is published, and the flight experience does not exist.
+B is not a near-term horizon; it is recorded here for completeness.
+
+Candidate diversity axes:
 
 * Different language runtime (not just variants of the same one).
 * Different OS family (at least one must not be Linux).
@@ -171,16 +289,82 @@ Real-world external feedback confirming value. Populate
 
 '''
 
-== 7. Summary (2026-08-03)
+== 7. Summary (2026-08-07)
 
-* Project grade: *E*. Why: the weakest in-scope components (Zig FFI scaffold,
-  quarantined ABI proof set) fail the D evidence gate (no per-capability
-  tests). The kernel and constitutional companion are individually at D with
-  strong exhaustive evidence — the project is a proven foundation, not yet a
-  product.
-* Delta since last assessment: first assessment.
-* Next milestone: E→D by either testing-and-wiring or removing the Zig FFI
-  scaffold, and resolving or formally descoping the quarantined ABI modules.
+* *Project grade: D* (`alpha-unstable`), promoted from E. Every in-scope
+  component in §3 grades D, so the weakest-link rule sets the project at D.
+  The promotion is earned on the D gate, not on the fact that two blockers
+  cleared: every declared *code* capability now has per-capability tests that
+  were re-run on the assessment date and pass (12 Rust, 11 Zig, 10 gated proof
+  modules across 4 provers, plus the shipped 3-module ABI seam), the scope is
+  documented, and 21 distinct RSR workflows execute green on `main`.
+
+* *Delta since 2026-08-03.* Both E-justifications are dead: the Idris2
+  quarantine is empty (5 ABI modules repaired, root causes distinct and real —
+  missing `Data.Nat` imports; `lteRefl` absent from idris2 0.7.0; proof
+  accessors declared at runtime rather than erased quantity; `SIsNonZero`
+  unable to unify with a non-literal alignment; a positivity-checker limitation
+  on a type synonym), the Lean module was repaired the same way (a binder named
+  `max`, which can never auto-bind because `max` is a global function), and the
+  Zig seam went from an empty `build.zig` that compiled nothing to 11 passing
+  tests. Coq, Agda and Lean gates were wired for the first time. Seven fake
+  gates were repaired and each falsified against a real violation. CI went from
+  "never run" to 21 green workflows. `.github/settings.yml` no longer requires
+  a phantom `estate-audit` context that nothing emits.
+
+* *The promotion is conditional in two places, and both are load-bearing:*
++
+--
+[loweralpha]
+. *`.github/workflows/proof-gate.yml` is untracked.* It is the only workflow
+  that runs `check-proofs.sh`, the shipped ABI package, the Zig tests or the
+  aspect tests. Until it is committed and has run green on the forge, the
+  entire proof and Zig column of this assessment is enforced on one laptop and
+  nowhere else — and "unwired is not done". *If that file is not committed, the
+  next re-assessment should not carry D forward for the four proof and FFI
+  rows.*
+. *`reproducible-build` is a declared capability with no test and a broken
+  invocation path.* Either gate a real `guix build` (fixing `Justfile:451-456`,
+  which point at a `guix.scm` that is not at the repository root) or remove the
+  capability from `rsr-profile.a2ml`.
+--
+
+* *What the green does NOT mean — state this wherever the badge is shown.*
+** Three of the four prover suites — Coq `TypeSafety.v`, Agda
+   `Properties.agda`, Lean `ApiTypes.lean` — are *verbatim RSR template
+   exemplars*. They compile and are gated, and they prove nothing whatsoever
+   about Conway physics. Their green is a toolchain signal, not a domain one.
+   The Idris2 MANIFEST is already honest about this for `Types.idr`.
+** The Rust tests are *proofs by exhaustion over a stated finite domain*
+   (512 rules, 65,536 worlds, one 240-generation trace), not formal proofs over
+   unbounded domains.
+** *No machine-checked refinement connects any proof to any shipped artefact.*
+   The Idris2 ABI proof set describes a model whose only compliant inhabitant is
+   a fieldless empty struct; nothing outside `verification/` references it. The
+   Zig seam exposes a template lifecycle, not the kernel, and `Cargo.toml`
+   declares no C-compatible `crate-type`, so it structurally cannot reach it.
+** `verification/proofs/tlaplus/StateMachine.tla` is unwired by every gate and
+   is an uninstantiated template for a generic request pipeline. No TLA+
+   toolchain is installed.
+
+* *Other known debt carried into this grade, stated rather than papered over:*
+  `scripts/validate-template.sh` (410 lines) is ungated and red, demanding a
+  `codeql.yml` deliberately deleted in `ce52d18`; `benches/template_bench.sh`
+  times a test file that no longer exists and discards every exit code, so
+  `just bench` and `just readiness` are now honestly unimplemented (exit 1);
+  `.gitlab-ci.yml` claims "Primary CI/CD — GitLab is the source of truth" while
+  there is no GitLab remote and it covers none of the proofs, Zig or `just`;
+  no `SONAR_TOKEN` and no SonarCloud or OpenSSF BP registration; `mise.toml`
+  pins rust/just/zig but not the four prover toolchains that `just test` now
+  treats as fatal-if-absent.
+
+* *Next milestone: not C.* The next milestone is to *retire the two conditions
+  above* and to land the frozen mission specification named in
+  `PROOF-ROADMAP.md` — because without it there is nothing to dogfood, and
+  without dogfooding the C gate cannot even begin its evidence window. Replacing
+  the three template prover exemplars with real domain proofs, and connecting
+  the ABI model to the shipped seam, are the two highest-value follow-ons.
+
 * Machine-readable grade line present (§ header) for `just crg-grade` / `just crg-badge`.
 
 '''
@@ -191,8 +375,11 @@ Real-world external feedback confirming value. Populate
 * `docs/governance/CRG-AUDIT-<DATE>.adoc` — formal audit (populate from
   `sr71-blackglider/docs/governance/CRG-AUDIT-TEMPLATE.adoc`).
 * `docs/practice/DOGFOOD-LOG.adoc` — dated dogfood evidence (required for C).
+  *Does not exist as of 2026-08-07.*
 * `.machine_readable/descriptiles/STATE.a2ml` — authoritative state (canonical keys
   `[dogfooding-status]`, `[external-targets]`, `[issues-fed-back]`,
-  `[field-signal]`).
+  `[field-signal]`). *None of these four keys is present as of 2026-08-07.*
+* `.machine_readable/rsr-profile.a2ml` — the declared capability list this
+  assessment tests against.
 
 _Run `just crg-badge` to generate the shields.io badge for your README._
