@@ -30,15 +30,22 @@ namespace ApiResult
     | ok v => simp [map, Function.comp]
     | error c m => simp [map]
 
+end ApiResult
+
 -- Example: Bounded confidence value (0.0 to 1.0 modelled as Nat/1000)
 -- Replace with your project's numeric invariants
-structure BoundedNat (max : Nat) where
+--
+-- The bound is named `bound`, not `max`: `max` is a global function in
+-- Lean 4, so it can never be auto-bound as an implicit — `BoundedNat max`
+-- elaborated as `BoundedNat (max : α → α → α)`, the recorded quarantine
+-- reason ("`max` used where Nat is expected").
+structure BoundedNat (bound : Nat) where
   val : Nat
-  le_max : val ≤ max
+  le_bound : val ≤ bound
 
-theorem bounded_nat_le (b : BoundedNat max) : b.val ≤ max :=
-  b.le_max
+theorem bounded_nat_le (b : BoundedNat bound) : b.val ≤ bound :=
+  b.le_bound
 
 -- Proof: zero is always bounded
-def zeroBounded (h : 0 < max) : BoundedNat max :=
-  ⟨0, Nat.zero_le max⟩
+def zeroBounded (_h : 0 < bound) : BoundedNat bound :=
+  ⟨0, Nat.zero_le bound⟩

@@ -7,24 +7,35 @@
 
 module Types
 
+import Data.Nat
+
 %default total
 
-||| Example: A bounded natural number (0 to max).
+||| Example: A bounded natural number (0 to bound).
 ||| Replace with your project's core types.
+|||
+||| `inBounds` is ERASED (quantity 0). The recorded quarantine reason —
+||| an erased field "is not accessible in this context" — pointed at the
+||| ACCESSOR, not the field: `boundedLeMax` returns a proof, so it is a
+||| proof and belongs at quantity 0 itself. De-erasing the field also
+||| compiles, but it costs the newtype-transparent representation (measured:
+||| `Bounded` becomes a two-field heap allocation) to buy nothing. See the
+||| same reasoning, and the same repair, in ABI/Pointers.idr.
 public export
-record Bounded (max : Nat) where
+record Bounded (bound : Nat) where
   constructor MkBounded
   value : Nat
-  {auto 0 inBounds : LTE value max}
+  {auto 0 inBounds : LTE value bound}
 
-||| Proof that a Bounded value is always <= max.
+||| Proof that a Bounded value is always <= bound.
+||| Quantity 0: it is a proof, not a runtime function.
 export
-boundedLeMax : (b : Bounded max) -> LTE b.value max
+0 boundedLeMax : (b : Bounded bound) -> LTE b.value bound
 boundedLeMax b = b.inBounds
 
 ||| Proof that zero is always a valid Bounded value.
 export
-zeroIsBounded : {max : Nat} -> Bounded (S max)
+zeroIsBounded : {bound : Nat} -> Bounded (S bound)
 zeroIsBounded = MkBounded 0
 
 ||| Example: A non-empty list with a compile-time guarantee.

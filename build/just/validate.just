@@ -53,14 +53,36 @@ validate-rsr:
     echo "RSR compliance: PASS"
 
 # Validate STATE.a2ml syntax
+#
+# Rewritten 2026-08-07. The previous body was
+#     grep -q A && grep -q B && echo "valid" || echo "INVALID (...)"
+# which exits 0 on BOTH branches — `echo` succeeds, so the `||` arm reports a
+# failure and then returns success. Proven by destroying the subject:
+# replacing STATE.a2ml with the single line "garbage not a2ml at all" printed
+# "STATE.a2ml: INVALID (missing required sections)" and exited 0, after which
+# `just validate` announced "All validations passed!".
+#
+# A missing file is also a failure now: "No STATE.a2ml found" followed by
+# success is the same defect wearing a politer message — STATE.a2ml is
+# mandatory in an RSR repo, so its absence is precisely what this should catch.
 validate-state:
-    @cd "{{justfile_directory()}}" && if [ -f ".machine_readable/descriptiles/STATE.a2ml" ]; then \
-        grep -q '^\[metadata\]' .machine_readable/descriptiles/STATE.a2ml && \
-        grep -q 'project\s*=' .machine_readable/descriptiles/STATE.a2ml && \
-        echo "STATE.a2ml: valid" || echo "STATE.a2ml: INVALID (missing required sections)"; \
-    else \
-        echo "No .machine_readable/descriptiles/STATE.a2ml found"; \
+    #!/usr/bin/env bash
+    set -uo pipefail
+    cd "{{justfile_directory()}}"
+    STATE=".machine_readable/descriptiles/STATE.a2ml"
+    if [ ! -f "$STATE" ]; then
+        echo "STATE.a2ml: MISSING at $STATE — required by the RSR layout." >&2
+        exit 1
     fi
+    missing=()
+    grep -q '^\[metadata\]'  "$STATE" || missing+=("[metadata] section")
+    grep -qE 'project\s*='   "$STATE" || missing+=("project = ...")
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "STATE.a2ml: INVALID — missing:" >&2
+        printf '  - %s\n' "${missing[@]}" >&2
+        exit 1
+    fi
+    echo "STATE.a2ml: valid"
 
 # Validate AI installation guide completeness (finishbot pre-release check)
 validate-ai-install:
@@ -127,6 +149,16 @@ validate-ai-install:
     fi
     echo "AI install guide: PASS"
 
+# Run the 8-phase repository structure validator.
+#
+# scripts/validate-template.sh was ungated: its only caller was
+# benches/template_bench.sh, which pipes it to /dev/null and appends `|| true`
+# because a benchmark wants a duration, not a verdict. So a 410-line validator
+# ran nowhere that could act on its result — and it had been RED (it required
+# a codeql.yml deliberately removed in ce52d18) with nothing to notice.
+validate-structure:
+    bash scripts/validate-template.sh . 0
+
 # Full validation suite
-validate: validate-rsr validate-state validate-ai-install
+validate: validate-rsr validate-state validate-ai-install validate-structure
     @echo "All validations passed!"

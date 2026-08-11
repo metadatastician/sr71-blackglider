@@ -92,7 +92,7 @@ jobs:
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
       - name: Install git-cliff
         run: |
-          curl -sSfL https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-$(uname -m)-unknown-linux-gnu.tar.gz \
+          curl -sSfL "https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-$(uname -m)-unknown-linux-gnu.tar.gz" \
             | tar -xz --strip-components=1 -C /usr/local/bin/ git-cliff-*/git-cliff
       - name: Generate changelog for this release
         id: cliff

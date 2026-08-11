@@ -151,24 +151,43 @@ labels:
 # merely describe protection, it re-imposes the deadlock on every push.
 #
 # `contexts` is deliberately EMPTY rather than aspirational. Requiring a check
-# that cannot pass is the same defect as requiring one that cannot report, and
-# on this repo no check can currently run at all: GitHub Actions is billing-
-# blocked for PRIVATE repositories on this account ("The job was not started
-# because recent account payments have failed or your spending limit needs to be
-# increased"), which is why every workflow here fails with zero steps while the
-# estate's public repos run normally. Repopulate this list — one context at a
-# time, each pinned to a job id, each verified green — once Actions can run.
+# that cannot pass is the same defect as requiring one that cannot report.
+#
+# CORRECTED 2026-08-04. Two claims in this block had drifted from reality:
+#
+#   1. The list was NOT empty — it read `contexts: ["estate-audit"]`, flatly
+#      contradicting the paragraph above it. Nothing in .github/ emits
+#      `estate-audit`; the job id is `estate-rules`. Cross-checked against the
+#      names GitHub actually recorded:
+#        gh api repos/<owner>/<repo>/commits/main/check-runs \
+#          --jq '.check_runs[].name'
+#      `estate-audit` is absent. Combined with enforce_admins, that is a branch
+#      nothing can ever merge into — the deadlock this very comment warns about,
+#      reintroduced one line below it.
+#   2. The billing rationale described a PRIVATE repo whose Actions were
+#      payment-blocked. This repo is PUBLIC and its workflows run: 18 green
+#      checks on 2026-08-04. The paragraph was inherited, not observed.
+#
+# Repopulate this list — one context at a time, each pinned to a job id, each
+# verified present in the check-runs output above before it is added here.
+#
+# Review counts are 0 / code-owner-review off because this repo has ONE
+# maintainer (GOVERNANCE.adoc: "presently staffed by a sole maintainer"), and
+# GitHub does not permit approving your own pull request. Requiring an approval
+# nobody can give is the same unsatisfiable-gate defect as a phantom context —
+# it does not raise the bar, it just forces `--admin`, which trains the habit of
+# bypassing gates. Raise these the day a second maintainer exists, not before.
 branches:
   - name: "main"
     protection:
       required_pull_request_reviews:
-        required_approving_review_count: 1
+        required_approving_review_count: 0
         dismiss_stale_reviews: true
-        require_code_owner_reviews: true
+        require_code_owner_reviews: false
       required_conversation_resolution: true
       required_status_checks:
         strict: true
-        contexts: ["estate-audit"]
+        contexts: []
       enforce_admins: true
       required_signatures: true
       restrictions: null

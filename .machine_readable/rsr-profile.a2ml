@@ -13,4 +13,100 @@ declares-against = "2.0.0-draft"
 # library kernel, the Idris2 proof companion, the Zig FFI/ABI seam scaffold,
 # and the Guix reproducible build. No container, docs-site, or published
 # package yet — declare them when they exist, not before.
-capabilities = ["rust", "library", "idris2", "formal-proofs", "zig", "ffi", "abi", "reproducible-build"]
+#
+# --------------------------------------------------------------------------
+# RE-VERIFIED 2026-08-07 by running each tool in this working tree, not by
+# reading a status document. One capability failed and has been REMOVED.
+# --------------------------------------------------------------------------
+#
+# EARNED — evidence measured today:
+#
+#   rust        Cargo.toml declares [package] + [lib] path = src/lib.rs.
+#               613 LOC across src/*.rs. `cargo test --all-targets` 12/12 pass
+#               (tests/foundation.rs 6, tests/constitutional.rs 6, 0 unit tests
+#               in src/lib.rs). #![forbid(unsafe_code)]; ZERO external
+#               dependencies (Cargo.lock holds exactly one package: this one).
+#               cargo 1.97.1 / rustc 1.97.1.
+#
+#   library     [lib] target only — no [[bin]], no binary produced. This is a
+#               library crate and nothing else. NOTE the flip side, recorded in
+#               STATE.a2ml: no crate-type is declared, so it builds as an rlib
+#               and no foreign consumer can link it yet.
+#
+#   idris2      7 gated modules under verification/proofs/idris2 all compile:
+#               `scripts/check-proofs.sh idris2` PASS with manifest coverage
+#               complete (7/7 .idr accounted for), quarantine EMPTY. Separately
+#               `idris2 --typecheck abi.ipkg` PASS over the 3-module shipped
+#               seam in src/interface/Abi/. Idris2 0.7.0.
+#
+#   formal-proofs
+#               Four provers are wired and green: check-proofs.sh idris2 7/7,
+#               coq 1/1 (coqc 8.20.1), agda 1/1 (Agda 2.6.4.3), lean4 1/1
+#               (Lean 4.32.2). tests/aspect_tests.sh PASS — zero dangerous
+#               constructs (believe_me, assert_total, sorry, Admitted,
+#               postulate, unsafeCoerce) in gated proof code.
+#               DECLARED HONESTLY, NOT AS DOMAIN VERIFICATION: only
+#               verification/proofs/idris2/BlackGlider/Constitution.idr carries
+#               genuine B3/S23 domain content. The Coq, Agda and Lean modules,
+#               and Idris2 Types.idr, are verbatim RSR template exemplars — they
+#               compile and are gated but prove nothing about Conway physics.
+#               The capability is "this tree gates machine-checked proofs",
+#               which is true; it is not "the physics is proved end to end".
+#
+#   zig         `zig build test --summary all` in src/interface/ffi/ →
+#               5/5 steps, 11/11 tests (3 inline in src/main.zig, 8 in
+#               test/integration_test.zig). zig 0.16.0. build.zig was empty
+#               scaffolding until 2026-08-04 and compiled nothing; it is a real
+#               build now.
+#
+#   ffi         A compiled, exercised C-ABI export surface exists:
+#               11 `pub export fn sr71_blackglider_*` symbols plus a
+#               `callconv(.c)` callback type in src/interface/ffi/src/main.zig,
+#               covered by the 11 tests above. CAVEAT ON RECORD: the surface is
+#               still the template lifecycle (init / free / process /
+#               process_array / get_string / version / last_error) with
+#               `// Add your fields here` in Handle, and it does not bind to the
+#               Rust kernel. Declared because the seam builds, exports and is
+#               tested — NOT because it carries this project's data yet.
+#
+#   abi         src/interface/Abi/{Types,Layout,Foreign}.idr (323 LOC)
+#               typechecks as a package via abi.ipkg, and is the declaration the
+#               Zig seam is written against; SafePtr keeps its newtype-
+#               transparent representation via a quantity-0 non-null witness
+#               (confirmed with --dumpcases 2026-08-04). The separate ABI proof
+#               set under verification/proofs/idris2/ABI/ (360 LOC) is gated and
+#               green. CAVEAT ON RECORD: that proof set describes a MODEL of a C
+#               ABI — nothing outside verification/proofs references
+#               CABICompliant or StructLayout, and its only CABICompliant
+#               inhabitant is a fieldless empty struct. No conformance check
+#               binds the .idr declarations to the .zig exports.
+#
+# REMOVED 2026-08-07 — declared but never earned:
+#
+#   reproducible-build
+#               NOT EARNED. No reproducible build has ever been executed or
+#               verified here. Measured: `command -v guix` returns nothing —
+#               guix is not installed. `just guix-shell` and `just guix-build`
+#               (Justfile:451-456) both run `-f guix.scm` against the repository
+#               ROOT, where no such file exists; the only guix.scm is at
+#               build/guix.scm. And build/guix.scm is a FOREIGN CLOBBER, not
+#               this project's package definition: it declares
+#               (name "squisher-corpus"), (source #f), gnu-build-system for a
+#               Rust crate, and a PMPL-1.0-or-later licence against this repo's
+#               MPL-2.0. .github/workflows/guix-policy.yml is a presence-and-
+#               Nix-ban check that never builds anything, so it stayed green
+#               throughout. docs/status/READINESS.adoc reached the same verdict
+#               independently and gives the instruction followed here: fix the
+#               paths and gate a real `guix build`, or remove the capability —
+#               do not leave it declared and unbuilt. Re-declare it when
+#               `guix build` actually runs green in CI, and not before.
+#
+# DELIBERATELY NOT DECLARED:
+#
+#   benchmarks  `just bench` is honestly unimplemented and exits 1 (see
+#               Justfile:173). benches/template_bench.sh times a test file that
+#               no longer exists and discards every exit code. There is no
+#               benchmark capability to declare, so none is declared.
+#   container, docs-site, package
+#               Unchanged from the 2026-08-03 note above: not yet earned.
+capabilities = ["rust", "library", "idris2", "formal-proofs", "zig", "ffi", "abi"]

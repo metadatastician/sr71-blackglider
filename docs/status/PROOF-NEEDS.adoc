@@ -4,6 +4,29 @@
 // Authoritative master list: ~/Desktop/PROOF-REQUIREMENTS-MASTER.adoc
 = Proof Requirements — SR71_BLACKGLIDER
 
+Reconciled 2026-08-07 against measured runs. The previous revision predated the
+proof workup and listed every obligation as "Needed" — including several since
+discharged, and one (TLA+) that no gate has ever checked. This file now records
+what remains *open*, and states for each discharged obligation *by what means*
+it was discharged, because those means are not equivalent.
+
+== How to read a status in this file
+
+Three tiers, and they must never be collapsed into one word "proven":
+
+[cols="1,3,4", options="header"]
+|===
+| Tier | Means | What it entitles you to say
+
+| *T-EXH* | Discharged *by exhaustion over a stated finite domain* — a Rust test that enumerates the whole domain. | "Holds for every element of _this finite domain_." Not "holds in general". The domain must be named whenever the result is cited.
+| *T-MACH* | Discharged *by machine proof* — a total, `--safe`-clean development checked by a prover, with no `believe_me`/`sorry`/`Admitted`/`postulate`. | "Holds for all inhabitants of the stated type." Says nothing about compiled Rust or Zig unless a refinement links them — and none exists here (see OPEN-1).
+| *T-OPEN* | *Not discharged.* No proof, no exhaustive test, or the artefact exists but is checked by nothing. | Nothing. Silence is not affirmation.
+|===
+
+A fourth caution applies throughout: several artefacts *compile and are gated*
+while proving nothing about this project. They are marked *EXEMPLAR*. A green
+gate over an exemplar is evidence the prover ran, and is not domain coverage.
+
 == Proof Tier
 
 // Assign one: T1 (Critical), T2 (High), T3 (Standard), T4 (Light), T5 (Exempt)
@@ -16,52 +39,225 @@
 | Code | Meaning | Applies?
 
 | *TP* | Typing Proofs (type soundness, type safety) | Yes
-| *INV* | Invariant Proofs (state machines, monotonicity, bounds) |
-| *SEC* | Security Proofs (crypto, injection freedom, access control) |
-| *CONC* | Concurrency Proofs (linearizability, deadlock freedom) |
-| *ALG* | Algorithm Proofs (termination, correctness, bounds) |
+| *INV* | Invariant Proofs (state machines, monotonicity, bounds) | Yes — the constitutional equations
+| *SEC* | Security Proofs (crypto, injection freedom, access control) | No
+| *CONC* | Concurrency Proofs (linearizability, deadlock freedom) | No — the kernel is single-threaded
+| *ALG* | Algorithm Proofs (termination, correctness, bounds) | Yes — determinism and causal radius
 | *ABI* | ABI/FFI Proofs (memory layout, pointer safety, platform compat) | Yes
-| *DOM* | Domain-Specific Proofs (bespoke to this project) |
+| *DOM* | Domain-Specific Proofs (bespoke to this project) | Yes — Conway physics, chart, glider, renderer exclusion
 |===
 
-== Mandatory Proofs (All RSR Repos)
+== Tier 1 — Discharged by exhaustion over a finite domain (T-EXH)
 
-These proofs come from the sr71-blackglider and MUST be present in every repo:
+`cargo test --all-targets` → 12/12 pass, measured 2026-08-07. These are the
+constitutional obligations C1–C13, carried by `tests/foundation.rs` (C1–C7) and
+`tests/constitutional.rs` (C8–C13). The crate is `#![forbid(unsafe_code)]` with
+zero external dependencies.
 
-=== ABI/FFI Boundary Proofs (Idris2)
+[cols="1,4,3", options="header"]
+|===
+| # | Obligation | Domain exhausted
+
+| C1 | Local rule is exactly B3/S23 | *all 512* local configurations
+| C2 | Snark is a stable 49-cell counterfactual | the Snark pattern
+| C3/C4 | Snark reaction yields only a causal reflected glider, and recovers | a 240-generation trace
+| C5 | Rendering is observational and cannot change history | the stated render/step interface
+| C6 | Rotated chart maps Life diagonals to BLACKGLIDER axes exactly | the four diagonal directions
+| C7 | Replay material reconstructs the identical history | the traced run
+| C8 | Every 4×4 world matches an independent synchronous oracle | *all 65,536* 4×4 worlds
+| C9 | The exact chart is bijective onto the same parity sublattice | the chart's stated domain
+| C10 | Graph surface and rigid attitude preserve distinct events | the enumerated event set
+| C11 | All 16 glider heading/phase patterns are detected and translate correctly | *all 16* heading×phase patterns
+| C12 | Causal radius bounds: a 9×9 world and a 15×15 dead-padded world agree cell-for-cell within the radius, so world size is causally irrelevant | *all 512* 3×3 seed masks × 4 generations
+| C13 | Presentation inputs have no physical capability | the input type's constructors
+|===
+
+*What this tier does not give you.* Exhaustion over 4×4 says nothing about
+5×5. The oracle agreement is agreement with a second implementation, not with a
+specification. C1–C13 are strong evidence and they are not theorems over
+unbounded worlds. Cite the domain or do not cite the result.
+
+`src/lib.rs` defines *zero* unit tests; all 12 obligations live in
+`tests/`. 613 LOC of source against 357 LOC of tests.
+
+== Tier 2 — Discharged by machine proof (T-MACH)
+
+=== Constitutional equations (Idris2) — real domain content
+
+`scripts/check-proofs.sh idris2` PASS (Idris2 0.7.0, measured 2026-08-07);
+7/7 gated, *quarantine empty*.
+
+`verification/proofs/idris2/BlackGlider/Constitution.idr` is the one machine
+proof in this repo about this project's actual subject matter:
+
+[cols="1,4,1", options="header"]
+|===
+| # | Proof | Status
+
+| DOM-1 | B3/S23 birth/survival/death equations (`birthOnThree`, `surviveOnTwo`, `surviveOnThree`, `deadOnTwo`, `overpopulationOnFour`) | *T-MACH*
+| DOM-2 | `localRuleRefinesB3S23` over the complete legal centre/neighbour-count domain | *T-MACH*
+| DOM-3 | Exact chart headings (`northEastIsUp`, `southEastIsForward`, `southWestIsDown`, `northWestIsBack`) | *T-MACH*
+| ALG-1 | `evolutionIsDeterministic` | *T-MACH*
+| DOM-4 | `observersArePhysicallyIrrelevant` — observer exclusion | *T-MACH*
+| ALG-2 | `causalRadiusIsGenerationCount` | *T-MACH*
+|===
+
+The module's own header is explicit and this file repeats it rather than
+softening it: it "proves the constitutional equations represented here; it does
+not claim refinement of the Rust implementation or verification of compiled
+code." See OPEN-1.
+
+=== ABI/FFI boundary proofs (Idris2) — proved, but over a model
+
+All five compile and are gated. Every one is *T-MACH over a model of a C ABI*,
+not over the shipped Zig FFI. See OPEN-2 before citing any of them.
 
 [cols="1,3,1,3", options="header"]
 |===
 | # | Proof | Status | File
 
-| ABI-1 | Non-null pointer proofs (`So (ptr /= 0)`) | Needed | `verification/proofs/idris2/ABI/Pointers.idr`
-| ABI-2 | Memory layout correctness (`HasSize`, `HasAlignment`) | Needed | `verification/proofs/idris2/ABI/Layout.idr`
-| ABI-3 | Platform type size proofs (per platform) | Needed | `verification/proofs/idris2/ABI/Platform.idr`
-| ABI-4 | FFI function return type proofs | Needed | `verification/proofs/idris2/ABI/Foreign.idr`
-| ABI-5 | C ABI compliance (`CABICompliant`, `FieldsAligned`) | Needed | `verification/proofs/idris2/ABI/Compliance.idr`
+| ABI-1 | Non-null pointer proofs (`SafePtr`, `So`-witness uniqueness, handle equality) | *T-MACH (model)* | `verification/proofs/idris2/ABI/Pointers.idr`
+| ABI-2 | Struct size/alignment/padding; alignment stated as divisibility *with a `NonZero` conjunct* | *T-MACH (model)* | `verification/proofs/idris2/ABI/Layout.idr`
+| ABI-3 | Per-platform pointer/int/`size_t` sizes with LTE bounds | *T-MACH (model)* | `verification/proofs/idris2/ABI/Platform.idr`
+| ABI-4 | FFI function return type proofs | *T-MACH (model)* | `verification/proofs/idris2/ABI/Foreign.idr`
+| ABI-5 | C ABI compliance record over Layout + Platform | *T-MACH (model)* | `verification/proofs/idris2/ABI/Compliance.idr`
 |===
 
-=== Typing Proofs (Prover Varies)
+Two defects were introduced while repairing these and caught by adversarial
+review; both are fixed, and both are recorded here because they are the kind of
+regression a green gate cannot see:
 
-[cols="1,3,1,3", options="header"]
+* ABI-2 was briefly restated as divisibility *without* a `NonZero` conjunct,
+  which is strictly weaker than the `mod` phrasing it replaced: at alignment 0
+  a complete `CABICompliant` certificate could be built for a size-0,
+  alignment-0 struct that cannot exist in C. The conjunct is back; the attack
+  is now rejected while legal layouts still prove.
+* De-erasing proof witnesses (quantity 0 → unrestricted) silently cost the
+  newtype-transparent representation — measured with `--dumpcases`, `SafePtr`
+  became a two-field heap object per pointer. Reverted; the correct repair was
+  one character on the *accessor* (`0 safePtrNeverNull`).
+
+=== Shipped ABI seam (Idris2)
+
+`idris2 --typecheck abi.ipkg` PASS — `src/interface/Abi/{Types,Layout,Foreign}.idr`.
+This is the package the Zig FFI is written against, and it is *outside*
+`check-proofs.sh`'s MANIFEST scope, so it is gated separately by name. Until
+2026-08-07 the one Idris2 artefact with a downstream consumer was the one
+artefact no gate checked.
+
+=== Typing proofs — gated, but EXEMPLAR
+
+[cols="1,3,2,3", options="header"]
 |===
 | # | Proof | Status | File
 
-| TP-1 | Core data type well-formedness | Needed | `verification/proofs/idris2/Types.idr`
-| TP-2 | Public API type safety (exported functions) | Needed | `verification/proofs/lean4/ApiTypes.lean`
+| TP-1 | Core data type well-formedness — bounded `Nat`, non-empty list | *T-MACH, EXEMPLAR* | `verification/proofs/idris2/Types.idr`
+| TP-2 | "Public API type safety" — `ApiResult` functor laws (`map_id`, `map_comp`) + `BoundedNat` bounds | *T-MACH, EXEMPLAR* | `verification/proofs/lean4/ApiTypes.lean`
+| TP-3 | "Type soundness" — a toy simply-typed calculus (`ty`, `expr`, `has_type`, `eval`, one `type_soundness` theorem) | *T-MACH, EXEMPLAR* | `verification/proofs/coq/TypeSafety.v`
+| TP-4 | `append-length`, `Monotone`/`Idempotent`, `suc-monotone` | *T-MACH, EXEMPLAR* | `verification/proofs/agda/Properties.agda`
 |===
 
-== Project-Specific Proofs
+All four compile and are gated (`check-proofs.sh` coq/agda/lean4 wired for the
+first time on 2026-08-07; `ApiTypes.lean` was quarantined and is now repaired).
+*All four are verbatim RSR template stubs.* None mentions Conway, the chart, the
+glider or the renderer. TP-2/TP-3/TP-4 do not discharge any obligation of this
+project; they are listed under T-MACH because the prover genuinely ran, and
+marked EXEMPLAR because that is all their green means. The Idris2 MANIFEST is
+already honest about TP-1 ("template examples, honest ones"); the Coq, Agda and
+Lean MANIFEST notes say only "compiles", which is true and reads as more than
+it is. Retiring or replacing them is OPEN-4.
 
-// Fill in proofs specific to this project. Copy from PROOF-REQUIREMENTS-MASTER.adoc
-// Delete this section for T4/T5 repos
+== Tier 3 — NOT discharged (T-OPEN)
 
-[cols="1,3,1,1,1,2", options="header"]
+[[OPEN-1]]
+=== OPEN-1 — No refinement connects the Idris2 model to the Rust kernel
+
+*Nothing proves that the proofs and the implementation agree.* They are verified
+separately: `Constitution.idr` proves the constitutional equations of a model,
+`tests/foundation.rs` and `tests/constitutional.rs` exhaust a finite domain of
+the implementation, and no machine-checked artefact relates the two. If the
+Rust `Life::step` and the Idris2 `nextCell` diverged, both tiers above would
+stay green. Until a refinement exists, "the Conway physics is proven" is an
+overclaim; the defensible statement is "the equations are proven of a model and
+the implementation is exhaustively tested on stated finite domains".
+
+[[OPEN-2]]
+=== OPEN-2 — The ABI proofs have no inhabitants from the shipped FFI
+
+`grep -rn 'CABICompliant\|StructLayout' --include='*.zig' --include='*.rs' .`
+returns *nothing*. No Rust or Zig struct is ever presented to the compliance
+certificate; the only inhabitant is a fieldless empty struct. ABI-1…ABI-5 are
+therefore proofs about a *model* of a C ABI, not about the seam that ships.
+Smallest useful step: generate `StructLayout` values from the actual FFI types
+so the certificate has real inhabitants and the Zig side is what is certified.
+
+The Zig side itself is now tested — `zig build test --summary all` → 11/11
+tests, 5/5 steps — but tested is not proved, and none of those tests consults
+the Idris2 layout model.
+
+[[OPEN-3]]
+=== OPEN-3 — The TLA+ obligation is checked by nothing, and models the wrong system
+
+`verification/proofs/tlaplus/StateMachine.tla` exists. It is:
+
+* *Uninstantiated.* Its own header says "TLA+ Specification Template: State
+  Machine / Replace with your project's distributed protocol". Its states are
+  `idle`, `scanning`, `routing`, `dispatching`, `done`, `failed` — a generic
+  request pipeline, irrelevant to a Conway spacetime.
+* *Unwired.* `scripts/check-proofs.sh` accepts only `idris2|lean4|agda|coq`;
+  there is no `tlaplus` mode. The only thing in the repo that touches the
+  directory is `build/just/proofs.just:52`, which runs `find … | wc -l` — it
+  *counts files*, it does not check them.
+* *Uncheckable here.* No TLA+/TLC toolchain is installed.
+
+No obligation of this project is discharged by it, and no obligation of this
+project currently needs it (the kernel is single-threaded and there is no
+distributed protocol). Resolve by instantiating it against something real *and*
+adding a gated TLC mode, or by deleting the file. An unchecked uninstantiated
+template inside `verification/proofs/` is the exact shape that gets miscounted
+as coverage.
+
+[[OPEN-4]]
+=== OPEN-4 — Coq, Agda and Lean carry no domain obligation
+
+See TP-2/TP-3/TP-4 above. Three gated, green provers; zero project coverage
+between them. Either assign each a real obligation from this file, or move them
+to an explicitly-labelled examples root that no readiness claim may cite.
+
+[[OPEN-5]]
+=== OPEN-5 — Renderer and mission semantics: no code, therefore no proof
+
+The presentation/renderer layer and the mission semantics *do not exist yet*
+(`STATE.a2ml`: 25% complete). Every obligation below is open by construction,
+not by neglect:
+
+[cols="1,4,1,2", options="header"]
 |===
-| # | Proof Needed | Category | Prover | Priority | File(s)
+| # | Obligation | Category | Prover (intended)
 
-| | | | | |
+| DOM-5 | Renderer is observationally inert on the *implemented* renderer — C5/C13 currently constrain an interface, not a renderer that draws | DOM/INV | Idris2 + exhaustive Rust
+| DOM-6 | Geometric flight presentation preserves canonical causality under coordinate curvature (the repo's IS-NOT explicitly denies the converse) | DOM | Idris2
+| DOM-7 | Mission semantics: a frozen mission specification, then replay-certificate soundness | DOM/ALG | Idris2 + golden-file tests
+| DOM-8 | Mission replay determinism across runs and machines | ALG | exhaustive + certificate
 |===
+
+`PROOF-ROADMAP.md` names the frozen mission specification as the next real
+step; DOM-6…DOM-8 are blocked on it, and DOM-5 on the renderer existing.
+
+== Summary of open obligations
+
+[cols="1,4,1", options="header"]
+|===
+| # | Open obligation | Blocked on
+
+| OPEN-1 | Machine-checked refinement, Idris2 model ⟶ Rust kernel | nothing — can start now
+| OPEN-2 | Real `StructLayout` inhabitants from the shipped Zig/Rust FFI types | nothing — can start now
+| OPEN-3 | Instantiate + gate the TLA+ spec, or delete it | a decision, then a toolchain
+| OPEN-4 | Domain content for Coq / Agda / Lean, or relabel as examples | a decision
+| OPEN-5 | Renderer and mission proofs (DOM-5…DOM-8) | the renderer; the frozen mission spec
+|===
+
+Nothing in Tier 1 or Tier 2 is blocked. Everything remaining is above.
 
 == Dangerous Patterns (BANNED)
 
@@ -81,7 +277,34 @@ The following MUST NOT appear anywhere in proof files:
 | `unsafe` (unaudited) | Rust | Unsafe block without safety comment
 |===
 
-CI will reject any PR introducing these patterns (enforced by `panic-attack assail`).
+Enforced by `scripts/scan-dangerous.sh`, invoked from `tests/aspect_tests.sh`,
+which is a job in `.github/workflows/proof-gate.yml`. Measured 2026-08-07:
+PASS=2 FAIL=0 WARN=0. The previous Idris2 arm of this scan grepped `src/abi/`,
+a path that has never existed in this repo, and so could only ever pass; it has
+been replaced. The Rust crate is `#![forbid(unsafe_code)]`, which makes the
+last row a compiler error rather than a grep.
+
+== Where the gates run
+
+[source,bash]
+----
+just test                     # cargo + zig + abi.ipkg + all four check-proofs modes
+bash scripts/check-proofs.sh idris2   # and coq | agda | lean4 — MANIFEST-driven
+idris2 --typecheck abi.ipkg           # the SHIPPED seam
+----
+
+`.github/workflows/proof-gate.yml` (new, 2026-08-07) runs the aspect tests, the
+Zig FFI tests, `abi.ipkg`, and one job per prover, each installing its own
+toolchain. Before it existed, `grep -rn 'check-proofs\|proof-check\|just test'`
+over `.github/workflows/` returned *no hits* — every proof was enforced on one
+laptop and nowhere else.
+
+Known gate debt, recorded not hidden: the CI jobs install provers from distro
+packages and elan, whose versions may drift from the Idris2 0.7.0 / coqc 8.20.1
+/ Agda 2.6.4.3 / Lean 4.32.2 the MANIFESTs were ground-truthed against, and
+`mise.toml` pins rust, just and zig but *not* the four provers that `just test`
+now treats as fatal-if-absent. A version-induced failure is a real signal about
+proof portability; do not paper over it with a skip.
 
 == Prover Selection Guide
 
@@ -101,22 +324,23 @@ CI will reject any PR introducing these patterns (enforced by `panic-attack assa
 
 ----
 verification/proofs/
-├── idris2/          # Idris2 proofs (ABI, dependent types)
-│   ├── ABI/         # ABI-specific proofs
-│   └── *.idr        # Project-specific Idris2 proofs
-├── lean4/           # Lean4 proofs (algebra, lattices)
-│   └── *.lean
-├── agda/            # Agda proofs (induction, metatheory)
-│   └── *.agda
-├── coq/             # Coq proofs (type systems, compilation)
-│   └── *.v
-└── tlaplus/         # TLA+ specs (distributed protocols)
-    └── *.tla
+├── idris2/          # Idris2 proofs (ABI, dependent types) — 7 gated, 0 quarantined
+│   ├── ABI/         # ABI-1..ABI-5, proved over a MODEL (OPEN-2)
+│   ├── BlackGlider/ # Constitution.idr — the domain content
+│   └── Types.idr    # EXEMPLAR
+├── lean4/           # ApiTypes.lean — gated, EXEMPLAR
+├── agda/            # Properties.agda — gated, EXEMPLAR
+├── coq/             # TypeSafety.v — gated, EXEMPLAR
+└── tlaplus/         # StateMachine.tla — UNWIRED, uninstantiated (OPEN-3)
+
+src/interface/Abi/   # the SHIPPED seam: Types/Layout/Foreign.idr, gated via abi.ipkg
 ----
 
 == References
 
 * Master list: `~/Desktop/PROOF-REQUIREMENTS-MASTER.adoc`
 * Proof status tracking: `PROOF-STATUS.adoc` (this repo)
+* Test-side counterpart: `docs/status/TEST-NEEDS.adoc`
+* Debt register: `DEBT.md`; honesty record: `AFFIRMATION.adoc`
 * Proven library: `proven` repo (Idris2 verified foundations)
 * Template: `rsr-template-repo/docs/status/PROOF-NEEDS.adoc`

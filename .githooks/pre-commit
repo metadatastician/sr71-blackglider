@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (metadatastician) <j.d.a.jewell@open.ac.uk>
+#
+# pre-commit — fast local hygiene gate (formatting, lints, security scan).
+#
+# WHY THIS FILE EXISTS HERE AND NOT IN .git/hooks/
+# ------------------------------------------------
+# `just install-hooks` used to write this hook to `.git/hooks/pre-commit`.
+# That directory is DEAD in this clone: `.githooks/install.sh` sets
+# `core.hooksPath=.githooks`, and when core.hooksPath is set git consults it
+# EXCLUSIVELY — `.git/hooks/` is never read. So the hook `just install-hooks`
+# installed could never fire, while both the recipe and its output claimed a
+# pre-commit gate was active. Same defect class as the checks this repo has
+# been auditing out: something that reports success without doing work.
+# There is now ONE hook mechanism (this directory) and `just install-hooks`
+# delegates to `.githooks/install.sh`.
+#
+# Enable once per clone:  .githooks/install.sh
+# Override for one commit:  git commit --no-verify
+#
+# Deliberately fast: the slow, authoritative gates (proofs, Zig, the full test
+# matrix) run in `just test` and in CI. This hook only catches the things that
+# are cheap to check and annoying to discover later.
+
+set -euo pipefail
+
+if ! command -v just >/dev/null 2>&1; then
+  echo "[pre-commit] 'just' not found — skipping hygiene gate." >&2
+  exit 0
+fi
+
+status=0
+run() {
+  local label="$1"; shift
+  echo "[pre-commit] $label…"
+  if ! "$@"; then
+    echo "[pre-commit] FAILED: $label" >&2
+    status=1
+  fi
+}
+
+run "formatting"  just fmt-check
+run "lints"       just lint
+
+# panic-attack is an optional local tool. Absence degrades to the recipe's
+# LOUD skip rather than blocking every commit on a machine that lacks it —
+# the authoritative enforcement is the CI static-analysis-gate. When the tool
+# IS present its exit code propagates, so a real finding blocks the commit.
+run "security scan" env ASSAIL_ALLOW_MISSING=1 just assail
+
+if [ "$status" -ne 0 ]; then
+  echo "" >&2
+  echo "[pre-commit] BLOCKED: fix the failures above, or override with:" >&2
+  echo "               git commit --no-verify" >&2
+  exit 1
+fi
+
+echo "[pre-commit] hygiene gate passed."
+exit 0

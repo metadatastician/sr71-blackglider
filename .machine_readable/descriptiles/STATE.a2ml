@@ -3,12 +3,22 @@
 [metadata]
 project = "sr71-blackglider"
 version = "0.1.0"
-last-updated = "2026-08-01"
+last-updated = "2026-08-07"
 status = "active"
 
 [project-context]
 name = "SR-71 BlackGlider"
 purpose = "A mathematically uncompromised flight through Conway's Game of Life, embedding genuine B3/S23 histories as curved, textured spacetime."
+# Re-examined 2026-08-07 and left UNCHANGED at 25. This is not the mean of the
+# milestone percentages below (that would read 59) — it is an effort-weighted
+# judgement. The four milestones at 100 are the mathematical foundation, and
+# they are genuinely finished: 12/12 Rust tests, 512/512 local rules,
+# 65,536/65,536 oracle worlds, 10 gated proof modules across four provers, an
+# 11/11 Zig FFI seam. The remaining three milestones — renderer, mission
+# semantics, playable artefact — are the bulk of the work by volume and stand
+# at 10 / 0 / 0. Nothing landed in the 2026-08-03..08-07 workup moved them:
+# that workup repaired and wired what already existed, it did not add product
+# surface. So 25 still holds. Raising it would be inflation.
 completion-percentage = 25
 
 [position]
@@ -27,24 +37,111 @@ milestones = [
 ]
 
 [blockers-and-issues]
+# Rewritten 2026-08-07. The previous first entry ("template-wide placeholder and
+# optional RSR modules still require project-specific pruning") is now largely
+# spent: the Idris2 quarantine is empty, the Zig FFI builds and is tested, the
+# Coq/Agda/Lean gates are wired, and the fake gates named in CHANGELOG have been
+# falsified and repaired. What is listed below is what actually blocks the
+# project today, measured by running the tools rather than read from a status doc.
 issues = [
-  "Template-wide placeholder and optional RSR modules still require project-specific pruning or configuration.",
+  "Three of the four gated prover suites are VERBATIM RSR TEMPLATE EXEMPLARS. verification/proofs/coq/TypeSafety.v (73 LOC, a toy type system), verification/proofs/agda/Properties.agda (37 LOC, list-append length) and verification/proofs/lean4/ApiTypes.lean (51 LOC, a Result functor) compile and are gated, but prove NOTHING about Conway physics. Their green must not be read as domain verification. verification/proofs/idris2/BlackGlider/Constitution.idr is the only proof module in the tree with genuine project-domain content; verification/proofs/idris2/Types.idr is likewise an exemplar and its MANIFEST already says so.",
+  "verification/proofs/tlaplus/StateMachine.tla is UNWIRED by every gate — scripts/check-proofs.sh accepts only idris2|lean4|agda|coq — AND is an uninstantiated template modelling a generic request pipeline that is irrelevant to this project. No TLA+ toolchain is installed on the development machine.",
   "No machine-checked refinement currently connects the Idris2 model to the Rust implementation or compiled executable.",
+  "The Idris2 ABI proof set proves properties of a MODEL of a C ABI, not of the shipped Zig FFI. Grep confirms nothing outside verification/proofs references CABICompliant or StructLayout, and the set's only CABICompliant inhabitant is a fieldless empty struct. Nothing binds src/interface/Abi/*.idr to the exports in src/interface/ffi/src/main.zig.",
+  "The presentation/renderer layer and the Life-native mission and control semantics DO NOT EXIST. PROOF-ROADMAP.md names a small, frozen mission specification as the next real step; until it exists there is nothing to render and nothing to dogfood.",
+  "The Zig FFI seam is tested but exposes nothing of this project: the surface under test is the template lifecycle (init / free / process / version / last-error) and Handle still carries `// Add your fields here`. Cargo.toml declares no crate-type, so the crate builds as an rlib only and the Zig seam cannot reach the kernel at all.",
+  ".github/workflows/proof-gate.yml exists in the working tree but is UNTRACKED. Until it is committed, every proof gate, the Zig tests and `just test` are enforced on one laptop and nowhere else.",
 ]
 
 [critical-next-actions]
 actions = [
-  "Design player agency entirely through initial conditions and genuine Life signals.",
   "Specify a finite first mission before extending proofs beyond the constitutional kernel.",
+  "Replace the Coq, Agda and Lean template exemplars with real domain content, or retire the suites — do not leave them gated and green while proving nothing about B3/S23.",
+  "Commit .github/workflows/proof-gate.yml so the proof, Zig and just gates run off this laptop.",
+  "Bind the ABI model to the shipped seam: add a cross-language conformance check between src/interface/Abi/*.idr and src/interface/ffi/src/main.zig, and give the Zig seam a real capability to carry (Cargo.toml needs a crate-type before it can reach the kernel).",
+  "Design player agency entirely through initial conditions and genuine Life signals.",
   "Build the production surface renderer without adding a reverse dependency into the kernel.",
   "Define a finite mission with explicit boundary-clear proof intervals.",
 ]
 
+# The 15 counted warnings below, each measured 2026-08-07 by running the tool:
+#   1  Coq TypeSafety.v is a template exemplar — gated, proves no domain property
+#   2  Agda Properties.agda is a template exemplar — same
+#   3  Lean ApiTypes.lean is a template exemplar — same
+#   4  Idris2 Types.idr is a template exemplar — MANIFEST is honest about it
+#   5  TLA+ StateMachine.tla unwired by every gate and uninstantiated
+#   6  .github/workflows/proof-gate.yml untracked — gates run on one laptop only
+#   7  scripts/validate-template.sh (410 lines) is UNGATED and currently RED: it
+#      demands a codeql.yml deliberately deleted when GitHub default CodeQL setup
+#      took over. Red but ungated — counted as a warning, not a failure, and named
+#      here so the zero on the failure line below is not read as "nothing is red"
+#   8  benches/template_bench.sh times a test file that no longer exists and
+#      discards every exit code; `just bench` and `just readiness` now exit 1
+#      as honestly unimplemented
+#   9  .gitlab-ci.yml claims "Primary CI/CD — GitLab is the source of truth" but
+#      there is no GitLab remote and it covers none of the proofs, Zig, or just
+#  10  mise.toml pins rust/just/zig but NOT the four prover toolchains that
+#      `just test` now treats as fatal-if-absent
+#  11  No SONAR_TOKEN secret; SonarCloud project not minted; OpenSSF Best
+#      Practices not registered
+#  12  build/guix.scm is a foreign clobber: it names package "squisher-corpus",
+#      declares PMPL-1.0-or-later against this repo's MPL-2.0, sets source #f and
+#      uses gnu-build-system for a Rust crate. `just guix-shell` / `just guix-build`
+#      point at guix.scm at the repository ROOT, where no such file exists, and
+#      guix is not installed here. No reproducible build has ever been executed
+#  13  Zig FFI exposes only the template lifecycle; Cargo.toml declares no
+#      crate-type so the seam cannot reach the kernel
+#  14  src/interface/ffi/src/main.zig cites src/abi/Foreign.idr in its header —
+#      a path that has never existed in this repository's history
+#  15  22 of the 25 README.adoc files under src/, verification/ and tests/ are
+#      three-line title-only stubs (only tests/fuzz, verification/proofs and
+#      src/aspects carry content)
 [maintenance-status]
-last-run-utc = "2026-08-01"
+last-run-utc = "2026-08-07"
+# "warn", not "pass": every GATED check is green locally on 2026-08-07 —
+# cargo test --all-targets 12/12; zig build test 11/11 tests, 5/5 steps;
+# scripts/check-proofs.sh idris2 7/7, coq 1/1, agda 1/1, lean4 1/1 with the
+# quarantine now empty; idris2 --typecheck abi.ipkg PASS; tests/aspect_tests.sh
+# PASS=2 FAIL=0. But green gates over template exemplars and unwired artefacts
+# are not a clean bill of health, and the warnings above say why.
 last-result = "warn"
-open-warnings = 1
+open-warnings = 15
+# No GATED check fails. See warning 7 for the one red-but-ungated script.
 open-failures = 0
+
+# ============================================================================
+# DOGFOODING STATUS
+# ============================================================================
+# Added 2026-08-07. The ABSENCE of this section was itself cited as a CRG D->C
+# promotion blocker (docs/status/READINESS.adoc §4 and §8: "STATE.a2ml contains
+# no [dogfooding-status] key — grep returns nothing"). It is present now so the
+# gap is EXPLICIT rather than merely missing. Every entry below is "not started".
+# Present-and-empty is not evidence; it is an honest zero.
+#
+# NOTE: .github/workflows/dogfood-gate.yml is a FORMAT dogfooding gate (does this
+# repo use hyperpolymath's own a2ml/k9 formats). It is a different thing from CRG
+# dogfooding, which means USING the foundation to build the game it exists for.
+# A green Dogfood Gate is NOT evidence for anything in this section.
+[dogfooding-status]
+started = false
+start-date = ""
+log-file = "docs/practice/DOGFOOD-LOG.adoc"
+log-file-exists = false
+evidence-window-days-elapsed = 0
+evidence-window-days-required = 28
+blocked-on = "PROOF-ROADMAP.md names a small, frozen mission specification as the next real step. Home context for this project is authoring and replaying genuine Conway missions through the kernel and certificates. That specification does not exist, so there is nothing to dogfood with — the window cannot begin."
+rust-kernel = "not started — 12/12 tests pass under cargo test --all-targets, but the kernel has never been driven by a mission, only by its own test harness"
+idris2-constitution = "not started — gated and compiling, never exercised against an authored mission"
+idris2-abi-proof-set = "not started — proves a model; no consumer exists to dogfood it"
+shipped-abi-seam = "not started — idris2 --typecheck abi.ipkg PASS; the Zig seam is written against it but no conformance check binds them"
+zig-ffi = "not started — 11/11 tests exercise the template lifecycle surface only; the crate is an rlib so the seam has never carried project data"
+formal-proofs = "not started — three of four prover suites are template exemplars; there is no domain claim to dogfood"
+renderer = "not started — component does not exist (route-to-mvp 10%)"
+mission-semantics = "not started — component does not exist (route-to-mvp 0%)"
+reproducible-build = "not started — and no longer declared as a capability; see .machine_readable/rsr-profile.a2ml, 2026-08-07"
+external-targets = []
+issues-fed-back = 0
+field-signal = "none"
 
 [ecosystem]
 part-of = ["Metadatastician estate", "Stealth Glider line", "RSR Framework"]

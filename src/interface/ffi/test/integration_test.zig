@@ -1,66 +1,75 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-// RSR Template FFI Integration Tests
+// SR-71 BlackGlider FFI Integration Tests
 //
-// These tests verify that the Zig FFI correctly implements the Idris2 ABI.
-// This is a TEMPLATE FILE — when instantiating a new project:
-// 1. Replace "template" with your project name in lowercase
-// 2. Link against your actual FFI implementation library
-// 3. Uncomment the test functions below
+// Exercises the exported C-ABI surface of src/main.zig through the `ffi`
+// module import wired in build.zig. Instantiated 2026-08-04 from the
+// template placeholder ("placeholder test - implementation required"),
+// which asserted only `expect(true)`.
 //
-// For now, this file contains documentation of what tests should exist.
+// Run: `zig build test` (from src/interface/ffi/), or `just test`.
 
 const std = @import("std");
+const ffi = @import("ffi");
 
-// NOTE: When instantiated, declare the actual FFI functions here:
-// extern fn mylib_init() ?*Handle;
-// extern fn mylib_free(?*Handle) void;
-// ... etc
-
-// And define Handle appropriately:
-// const Handle = opaque {};
-
-test "placeholder test - implementation required" {
-    // This test ensures the file compiles
-    // Actual tests depend on FFI implementation
-    try std.testing.expect(true);
+test "lifecycle: init -> is_initialized -> free" {
+    const h = ffi.sr71_blackglider_init() orelse return error.InitFailed;
+    try std.testing.expectEqual(@as(u32, 1), ffi.sr71_blackglider_is_initialized(h));
+    ffi.sr71_blackglider_free(h);
 }
 
-// ==============================================================================
-// Example tests (uncomment when instantiated with real FFI):
-// ==============================================================================
-//
-// test "lifecycle: create and destroy handle" {
-//     const handle = mylib_init() orelse return error.InitFailed;
-//     defer mylib_free(handle);
-// }
-//
-// test "operations: process with valid handle" {
-//     const handle = mylib_init() orelse return error.InitFailed;
-//     defer mylib_free(handle);
-//
-//     const result = mylib_process(handle, 42);
-//     try std.testing.expectEqual(@as(c_int, 0), result);
-// }
-//
-// test "memory safety: double free is safe" {
-//     const handle = mylib_init() orelse return error.InitFailed;
-//     mylib_free(handle);
-//     mylib_free(handle); // Should not crash
-// }
-//
-// test "strings: get string result from handle" {
-//     const handle = mylib_init() orelse return error.InitFailed;
-//     defer mylib_free(handle);
-//
-//     const str = mylib_get_string(handle);
-//     defer if (str) |s| mylib_free_string(s);
-//
-//     try std.testing.expect(str != null);
-// }
-//
-// test "version: returns non-empty version string" {
-//     const ver = mylib_version();
-//     const ver_str = std.mem.span(ver);
-//     try std.testing.expect(ver_str.len > 0);
-// }
+test "is_initialized on null handle is 0, not a crash" {
+    try std.testing.expectEqual(@as(u32, 0), ffi.sr71_blackglider_is_initialized(null));
+}
+
+test "process: ok on live handle, null_pointer on null handle" {
+    const h = ffi.sr71_blackglider_init() orelse return error.InitFailed;
+    defer ffi.sr71_blackglider_free(h);
+
+    try std.testing.expectEqual(ffi.Result.ok, ffi.sr71_blackglider_process(h, 42));
+    try std.testing.expectEqual(ffi.Result.null_pointer, ffi.sr71_blackglider_process(null, 42));
+}
+
+test "process_array: ok on buffer, null_pointer on null buffer" {
+    const h = ffi.sr71_blackglider_init() orelse return error.InitFailed;
+    defer ffi.sr71_blackglider_free(h);
+
+    const buf = [_]u8{ 1, 2, 3, 4 };
+    try std.testing.expectEqual(ffi.Result.ok, ffi.sr71_blackglider_process_array(h, &buf, buf.len));
+    try std.testing.expectEqual(ffi.Result.null_pointer, ffi.sr71_blackglider_process_array(h, null, 0));
+}
+
+test "string round-trip: get_string allocates, free_string releases" {
+    const h = ffi.sr71_blackglider_init() orelse return error.InitFailed;
+    defer ffi.sr71_blackglider_free(h);
+
+    const s = ffi.sr71_blackglider_get_string(h) orelse return error.NoString;
+    defer ffi.sr71_blackglider_free_string(s);
+    try std.testing.expectEqualStrings("Example result", std.mem.span(s));
+}
+
+test "get_string on null handle returns null and records an error" {
+    try std.testing.expectEqual(@as(?[*:0]const u8, null), ffi.sr71_blackglider_get_string(null));
+    const err = ffi.sr71_blackglider_last_error() orelse return error.NoErrorRecorded;
+    try std.testing.expectEqualStrings("Null handle", std.mem.span(err));
+}
+
+test "callback registration: ok with callback, null_pointer without" {
+    const h = ffi.sr71_blackglider_init() orelse return error.InitFailed;
+    defer ffi.sr71_blackglider_free(h);
+
+    const cb = struct {
+        fn hit(_: u64, x: u32) callconv(.c) u32 {
+            return x;
+        }
+    }.hit;
+    try std.testing.expectEqual(ffi.Result.ok, ffi.sr71_blackglider_register_callback(h, cb));
+    try std.testing.expectEqual(ffi.Result.null_pointer, ffi.sr71_blackglider_register_callback(h, null));
+}
+
+test "version and build info are non-empty and consistent" {
+    const ver = std.mem.span(ffi.sr71_blackglider_version());
+    try std.testing.expect(ver.len > 0);
+    const info = std.mem.span(ffi.sr71_blackglider_build_info());
+    try std.testing.expect(std.mem.indexOf(u8, info, "Zig") != null);
+}
