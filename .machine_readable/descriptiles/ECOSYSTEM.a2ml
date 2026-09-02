@@ -16,13 +16,15 @@ what-this-is-not = [
 
 [pipeline]
 position = "third Stealth Glider investigation"
-chain = "f19-stealth-glider -> f117a-stealth-glider -> sr71-blackglider"
+chain = "f19-stealth-glider -> f117a-stealth-glider -> sr71-blackglider -> x15-rocket-glider -> planer-1 -> enterglide-ncc-137-k -> tardis-rule-disruption"
 notes = "Carries forward load-bearing substrate, counterfactual causality and presentation separation while removing the pre-contact kinematic player seam."
-coordination = "metadatastician"
+coordination = "metadatastician/stealth-glider-ecosystem"
 
 [related-projects]
 projects = [
   { name = "f19-stealth-glider", relationship = "conceptual predecessor", notes = "Established substrate interaction, phase and causal TRACE." },
   { name = "f117a-stealth-glider", relationship = "conceptual predecessor", notes = "Added radar and a proven-inert 3D camera over the 2D world." },
   { name = "rsr-template-repo", relationship = "repository template", notes = "Canonical RSR scaffold from which this repository was minted." },
+  { name = "x15-rocket-glider", relationship = "conceptual successor", notes = "Fourth Stealth Glider investigation; reserved, scope not yet specified." },
+  { name = "stealth-glider-ecosystem", relationship = "coordination hub", notes = "Holds the canonical chain and membership manifest for the Stealth Glider line." },
 ]
