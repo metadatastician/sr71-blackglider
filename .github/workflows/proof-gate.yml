@@ -178,9 +178,28 @@ jobs:
         # .agda-lib directly via dpkg, which is authoritative about where the
         # package actually put it. Diagnostics are printed unconditionally so a
         # future failure is readable from the log alone.
+        #
+        # Ubuntu noble's agda-stdlib 1.7.3-1 ships NO .agda-lib and no
+        # /etc/agda/libraries: it expects `-i/usr/share/agda-stdlib` (see its
+        # /etc/emacs/site-start.d/60agda-stdlib.el). Runs 36736010124 and
+        # 36899875297 failed on exactly that ("no .agda-lib could be
+        # registered"). When the package provides none, write a library file
+        # that names that include directory.
+        #
+        # That directory is root-owned, and the packaged .agdai interfaces
+        # were built by a different Agda, so Agda rewrites them on first use.
+        # Run 37530922176 found the stdlib and then failed with
+        # "/usr/share/agda-stdlib/Data/Unit/Base.agdai: removeLink:
+        # permission denied". The library therefore points at a writable copy
+        # under ~/.agda, not at /usr/share.
+        #
+        # agda-bin (the compiler) is installed instead of the `agda`
+        # metapackage, with --no-install-recommends: the metapackage pulls
+        # emacs + elpa-agda2-mode, and on a slow mirror that download alone
+        # ran run 36899907868 into the 30-minute timeout.
         run: |
           sudo apt-get update
-          sudo apt-get install -y agda agda-stdlib
+          sudo apt-get install -y --no-install-recommends agda-bin agda-stdlib
           mkdir -p "$HOME/.agda"
           : > "$HOME/.agda/libraries"
           if [ -f /etc/agda/libraries ]; then
@@ -189,6 +208,13 @@ jobs:
             cat /etc/agda/libraries >> "$HOME/.agda/libraries"
           fi
           dpkg -L agda-stdlib 2>/dev/null | grep '\.agda-lib$' >> "$HOME/.agda/libraries" || true
+          if ! grep -q . "$HOME/.agda/libraries" && [ -d /usr/share/agda-stdlib ]; then
+            echo "package ships no .agda-lib; registering a writable copy of /usr/share/agda-stdlib"
+            cp -r /usr/share/agda-stdlib "$HOME/.agda/agda-stdlib"
+            printf 'name: standard-library\ninclude: %s\n' "$HOME/.agda/agda-stdlib" \
+              > "$HOME/.agda/standard-library.agda-lib"
+            echo "$HOME/.agda/standard-library.agda-lib" >> "$HOME/.agda/libraries"
+          fi
           sort -u -o "$HOME/.agda/libraries" "$HOME/.agda/libraries"
           echo 'standard-library' > "$HOME/.agda/defaults"
           echo "--- ~/.agda/libraries ---"; cat "$HOME/.agda/libraries"
