@@ -1,222 +1,327 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
-// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= AFFIRMATION — SR-71 BlackGlider, as of 2026-08-07T11:23:21Z
-:toc: macro
-:toclevels: 2
+= AFFIRMATION — SR-71 BlackGlider, as of 2026-10-07
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+:status: DRAFT — agent-authored, NOT affirmed by the owner
+:toc:
+:icons: font
 
-_the No-Bullshit file: what we affirm was true and checkable at this moment._
-
-[NOTE]
+[WARNING]
 ====
-An *affirmation* is a solemn declaration of the truth of a statement, made by
-someone who _declines to swear an oath_ — our truth-as-best-believed at a stamped
-instant, binding on our honesty, not a claim of infallibility. It is the third of
-the README / EXPLAINME / AFFIRMATION trio:
-
-[cols="1,3,2",options="header"]
-|===
-| File | Answers | Tense
-| `README.adoc` | _Where is this going, and why?_ — steering, intent, vision | future / aspirational
-| `EXPLAINME.adoc` | _How is it built, and what's the evidence?_ — engineering | descriptive / mechanism
-| *`AFFIRMATION.adoc`* (this file) | _What can we honestly affirm was *true and checkable* at a stamped moment?_ | a frozen instant, falsifiable
-|===
-
-*This file was itself a defect until 2026-08-07.* It shipped as an unfilled
-template: its title read `as of <UTC timestamp>`, its claims table held three
-`_e.g._` examples, and its anchor fields read `<full commit SHA at time of
-signing>`. The one document whose entire purpose is dated, evidence-backed,
-falsifiable claims made none. That is recorded as debt D-1 and is now closed.
+*DRAFT.* An AI engineering party drafted this file. It is not an affirmation
+until the owner lands it with a signed commit (`git commit -S`) whose parent
+is the anchor SHA below. If the landing commit has any other parent, read
+this file as a draft.
 ====
-
-toc::[]
 
 == What this is, and how it works
 
-*What it is.* A short, dated snapshot of what metadatastician can honestly and
-verifiably claim about *SR-71 BlackGlider* at one exact commit. Nothing here is
-marketing and nothing is a promise about the future — those live in the README.
-This file is the receipt.
+SR-71 BlackGlider is an exact B3/S23 Conway kernel written in Rust. Its
+flight presentation is meant to observe the Life history and never author
+it. Around the kernel sit:
 
-*How it stays trustworthy.* Three moving parts:
+* a constitutional test suite (C1–C13);
+* an Idris2 constitutional companion;
+* an Idris2 ABI seam and a Zig FFI seam;
+* a gated proof sweep across four provers.
 
-. *Ground truth, not memory.* Every claim below was produced by _running the
-  project's own checks_ in the session that wrote this file. Where a status doc,
-  the `Justfile`, or memory said otherwise, the live run won and the
-  contradiction is flagged — several are, in <<not-claimed>>.
-. *A frozen anchor.* The file names the exact commit, branch, UTC timestamp and
-  toolchain (see <<verifiable-anchor>>), so "true" always means "true _at this
-  point_". Move the SHA and this file is a draft until it is re-run.
-. *A real signature.* It is landed by a *signed git commit*; that signature over
-  this content at the anchored SHA is what makes the affirmation tamper-evident
-  and attributable — not the prose alone.
+This file reports what the repo's own checks produced at one commit. It
+replaces the 2026-08-07 affirmation. Every claim in that file that could be
+re-run was re-run, and the ones that no longer hold are listed under
+<<outstanding>>.
 
-*We are fallible.* This is our best honest belief, not a proof of its own
-correctness. Treat it as a falsifiable claim, not gospel.
+== The epistemic contract
 
-== The epistemic contract (read this before you trust _or_ attack)
-
-This document records metadatastician's *best belief* at the timestamp above. It
-is *not a guarantee of correctness.* The only guarantee is *no intentional
-overclaim*: where something is proven we say "proven"; where it is a documented
-trust boundary, an experiment, or an unwired module, we say so; where a claim is
-the README's aspiration rather than a checked result, we say so. An honest claim
-that later turns out false is an *error to be fixed* — not a lie.
-
-*Standing invitation to refute.* You are invited to bulldoze any claim in this
-file. Bring a counter-example, a failing run, or a contradicting source.
-
-This session did exactly that to itself: an adversarial review of the proof
-repair found *two defects introduced by the repair* — see
-<<caught-by-refutation>>. Both are recorded rather than quietly fixed, because
-the failure mode this project most needs to keep visible is a repair that
-weakens the thing it repairs.
-
-== What we affirm
-
-Every row was produced by the command in its Evidence column, run in this
-working tree at the anchor below.
-
-[cols="3,1,3",options="header"]
-|===
-| Claim | Status | Evidence (command)
-
-| The Rust kernel builds clean with no external dependencies
-| affirmed
-| `cargo build --all-targets`; `Cargo.toml` declares no `[dependencies]`
-
-| The crate forbids unsafe code
-| affirmed
-| `src/lib.rs:7` — `#![forbid(unsafe_code)]`
-
-| All 12 constitutional obligations C1–C13 hold
-| affirmed
-| `cargo test --all-targets` → 6 pass in `tests/foundation.rs`, 6 in `tests/constitutional.rs`
-
-| The B3/S23 local rule is exactly right on *every* configuration
-| affirmed
-| C1 checks all 512/512 local configurations exhaustively
-
-| Evolution matches an independent oracle on *every* 4×4 world
-| affirmed
-| C8 checks all 65,536/65,536 worlds against a separately-written synchronous oracle
-
-| A genuine Snark reflection occurs and the glider recovers
-| affirmed
-| C2/C3/C4 — a 240-generation trace, not a scripted animation
-
-| Presentation cannot alter history
-| affirmed
-| C5 (rendering is observational), C13 (presentation inputs have no physical capability)
-
-| The Idris2 constitutional companion compiles, total and axiom-free
-| affirmed
-| `bash scripts/check-proofs.sh idris2` → `BlackGlider/Constitution.idr PASS`; `%default total`, no `believe_me`
-
-| All 7 Idris2 modules are gated and the quarantine list is empty
-| affirmed
-| `check-proofs.sh idris2` → 7/7 PASS, "all 7 .idr file(s) accounted for"
-
-| The shipped ABI seam typechecks as a package
-| affirmed
-| `idris2 --typecheck abi.ipkg` → exit 0 (3 modules under `src/interface/Abi/`)
-
-| Coq, Agda and Lean proof modules compile under their gates
-| affirmed
-| `check-proofs.sh {coq,agda,lean4}` → 1/1 PASS each
-
-| The Zig FFI seam builds and its tests pass
-| affirmed
-| `zig build test --summary all` in `src/interface/ffi/` → 11/11 tests, 5/5 steps
-
-| The golden path is green on this machine
-| affirmed
-| `just test && just quality` → exit 0
-
-| Every proof gate can actually FAIL
-| affirmed
-| Falsified by planting real defects: a type error in a gated module, an unlisted `.idr`, a missing import, a broken Zig test — each produced a non-zero exit
-
-| The dangerous-construct scan can actually FAIL
-| affirmed
-| Falsified by planting `sorry` in a Lean file — reported and failed
-
-|===
-
-[#caught-by-refutation]
-== What refutation caught in this very session
-
-Recorded because an affirmation that only lists successes is advertising.
-
-. *A repair that weakened a proof.* Restating `FieldAligned` as divisibility
-  without a `NonZero` conjunct admitted `alignment = 0`, and a complete
-  `CABICompliant` certificate could be built for a size-0/alignment-0 struct
-  that cannot exist in C. The phrasing it replaced could not even be _formed_ at
-  alignment 0 — uninhabitable, therefore stronger. A doc comment asserted the
-  exact opposite. *Fixed*: `NonZero` conjunct added; the attack is now rejected
-  (`Mismatch between: S ?x and 0`) while legal layouts still prove.
-. *A repair that cost the representation.* De-erasing proof witnesses
-  (quantity `0` → unrestricted) made `SafePtr` stop being newtype-transparent —
-  measured with `idris2 --codegen refc --dumpcases`, it became a two-field heap
-  object per pointer. *Fixed*: reverted; the correct repair was one character on
-  the *accessor* (`0 safePtrNeverNull`), which is what the shipped seam
-  `src/interface/Abi/Types.idr` already does.
-
-[#not-claimed]
-== What we do NOT claim
-
-Silence is not affirmation. These are named because they are *not* verified.
-
-* *The Coq, Agda and Lean modules prove nothing about this project.* They are
-  verbatim RSR template exemplars — a toy `TyNat`/`TyBool` type system, list
-  append length preservation, a `Result` functor. They compile and they are
-  gated. Their green is a statement about the *gate*, not about Conway physics.
-  (Debt P-1.)
-* *No refinement connects the Idris2 model to the Rust kernel.* The constitution
-  is proved; the kernel is exhaustively tested; *nothing proves the two agree*.
-  A divergence would leave both ledgers green. (Debt P-2.)
-* *The Idris2 ABI modules prove properties of a model of a C ABI, not of the
-  shipped FFI.* `grep` finds no `CABICompliant`/`StructLayout` reference outside
-  `verification/proofs`; the only inhabitant is a fieldless empty struct. Do not
-  read them as "the C ABI is proven compliant". (Debt P-3.)
-* *Exhaustion is over finite domains.* 512/512 rules and 65,536/65,536 4×4
-  worlds are complete _for those domains_. Nothing establishes behaviour on
-  larger worlds beyond the 240-generation Snark trace. (Debt T-1.)
-* *`verification/proofs/tlaplus/StateMachine.tla` is checked by nothing* and
-  models a generic request pipeline unrelated to this project. (Debt P-4.)
-* *The renderer and the mission semantics do not exist.* `STATE.a2ml` records
-  25% complete. This is a proven foundation, not a game.
-* *Nothing is required to merge.* `.github/settings.yml` sets `contexts: []` and
-  probot/settings is not installed, so every gate is advisory. (Debt CI-2.)
-* *The new `proof-gate.yml` has not yet had a green run.* Until 2026-08-07 no
-  workflow ran any proof gate, the Zig tests, or `just test` — all of it was
-  enforced on one laptop. The workflow that fixes this is itself unproven until
-  it runs. (Debt CI-1, CI-3.)
-* *`reuse lint` fails* — 224 of 453 tracked files carry copyright information,
-  and an AGPL licence text ships in a repo that bans AGPL. (Debt L-1, L-2.)
-* *The Zig FFI is an unconsumed seam.* It compiles and tests, but exposes no
-  Conway concept and nothing in the kernel calls it. (Debt C-3.)
-
-The full register, with a reproducing command for every item, is
-link:DEBT.md[DEBT.md] — 28 items across licence, documentation, code, proof,
-test, CI/CD and supply chain, plus 7 defects inherited from the upstream
-template.
+You may conclude that each command below produced the stated exit code and
+counts at the anchor commit, on the stated toolchain. You may not conclude
+anything about code no command exercised, or about worlds larger than the
+finite domains the tests exhaust. The project is a tested foundation, not a
+game: no renderer or mission semantics exist. Where a run and a status
+document disagree, the run wins.
 
 [#verifiable-anchor]
 == Verifiable anchor
 
-[cols="1,3"]
+[cols="1,3", options="header"]
 |===
-| Project | SR-71 BlackGlider
-| Repository | https://github.com/metadatastician/sr71-blackglider
-| Base commit | `ce52d18d60907893a5953b2a3c91fdd89c332141`
-| Affirmed tree | the working tree landed by the commit that introduces this file (verify with `git show --stat HEAD`)
-| Branch | main
-| Timestamp (UTC) | 2026-08-07T11:23:21Z
-| Toolchain | cargo 1.97.1 · rustc 1.97.1 · Idris2 0.7.0 · Coq 8.20.1 · Agda 2.6.4.3 · Lean 4.32.2 · zig 0.16.0 · just 1.56.0
-| Affirmed by | Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+| Field | Value
+
+| Repo
+| `metadatastician/sr71-blackglider`
+
+| Branch
+| `main` (worktree branch `docs/affirmation-2026-10-07`, created from
+  `origin/main`)
+
+| Commit (HEAD)
+| `9f8da4efe497fbe1f502e7471847b13eacee620a`
+
+| Permalink
+| https://github.com/metadatastician/sr71-blackglider/tree/9f8da4efe497fbe1f502e7471847b13eacee620a
+
+| Verified (UTC)
+| Runs between `2026-10-07T11:09:45Z` and `2026-10-07T11:19:48Z`
+
+| Working-tree delta at verification
+| `clean`. `git status --porcelain` was empty before and after the runs.
+  Cargo and Zig output went to a scratch directory outside the tree. The
+  planted-defect controls ran in a separate `git archive` extract of HEAD,
+  which was deleted afterwards.
+
+| Toolchain
+| rustc 1.99.0, cargo 1.99.0, clippy 0.1.99, rustfmt 1.10.0; Zig 0.16.0;
+  Idris 2 0.7.0 (pack); Coq 8.20.1; Agda 2.6.4.3 with standard-library 2.1
+  (Debian); Lean 4.15.0 (selected by elan from
+  `verification/proofs/lean4/lean-toolchain`); just 1.56.0; reuse 5.0.2
 |===
 
-_Landed by a signed git commit. Verify with `git log --show-signature` that the
-anchor above matches the commit that introduced this affirmation._
+[CAUTION]
+====
+If you are reading this at a later commit, the claims may have drifted.
+Re-run the reproduction steps and write a fresh affirmation; do not trust a
+stale one.
+====
 
-_Re-run everything in the claims table with:_ `just test && just quality`.
+The runs used a restricted `PATH`: `/usr/bin:/bin` plus the cargo, zig,
+pack, elan and just directories under `developer/tools/opt`. That kept the
+mise shims out, because they refuse to run under this repo's untrusted
+`mise.toml`. The repo's `mise.toml` was not trusted.
+
+== Companion documents and repo metadata (cross-check)
+
+* `docs/affirmations/AFFIRMATION-2026-08-07.adoc`: the superseded file. It
+  was anchored on base commit `ce52d18d`, 39 commits before this anchor, on
+  rustc 1.97.1 and Lean 4.32.2. Its anchor table lacked the permalink and
+  working-tree fields. Its claims were re-run here. Two were refuted, and
+  two could not be re-run (see <<outstanding>>).
+* `DEBT.md`: the debt register. It holds 38 item identifiers (L, D, C, P,
+  T, CI and SC prefixes, counted by `grep`) plus 7 upstream items, U-1 to
+  U-7. The 2026-08-07 file said "28 items". The register has grown since.
+* `README.adoc`: describes the foundation as "exhaustively tested" and "not
+  yet a complete game". This file agrees.
+* `verification/proofs/*/MANIFEST`: the per-prover gate lists. All 10 proof
+  files are gated (7 Idris2, 1 each for Coq, Agda and Lean), and none is
+  quarantined.
+
+== The honest state (one breath)
+
+Each passing check, with its counts:
+
+* The Rust kernel builds with zero warnings, zero dependencies and
+  `forbid(unsafe_code)`.
+* 12 of 12 constitutional tests pass.
+* `fmt --check` and `clippy -D warnings` are clean.
+* The Zig FFI passes 11 of 11 tests.
+* The Idris2 ABI package typechecks.
+* All 10 gated proof modules compile.
+* The golden path `just test && just quality` exits 0.
+* Each gate tried could be made to fail by a planted defect.
+
+What does not hold:
+
+* `reuse lint` fails.
+* The Agda gate fails on this machine as configured.
+* Two sentences of the old file no longer hold.
+
+=== What is solid (and how we checked)
+
+[cols="3,2,1", options="header"]
+|===
+| Claim | Command | Result
+
+| The crate builds, all targets, with no external dependencies
+| `cargo build --all-targets --locked`; `Cargo.toml` has 0 `[dependencies]`
+  sections
+| exit 0; 0 warnings
+
+| The crate forbids unsafe code
+| `grep -n 'forbid(unsafe_code)' src/lib.rs`
+| line 7
+
+| Constitutional obligations C1–C13 hold as tested
+| `cargo test --all-targets --locked`
+| exit 0; 6/6 `foundation.rs`, 6/6 `constitutional.rs`, 0 lib unit tests
+
+| The local rule is checked on every 3×3 configuration
+| C1 (`for bits in 0_u16..512`)
+| 512/512, pass
+
+| Evolution matches an independent oracle on every 4×4 world
+| C8 (`for mask in 0_u64..1 << 16`)
+| 65,536/65,536, pass
+
+| Formatting and lints are clean
+| `cargo fmt --check`; `cargo clippy --all-targets -- -D warnings`
+| exit 0; exit 0
+
+| The Zig FFI seam builds and its tests pass
+| `zig build test --summary all` (in `src/interface/ffi`)
+| exit 0; 5/5 steps, 11/11 tests
+
+| The shipped Idris2 ABI seam typechecks as a package
+| `idris2 --typecheck abi.ipkg`
+| exit 0; 3/3 modules, 2 warnings
+
+| All 7 Idris2 proof modules are gated and compile
+| `bash scripts/check-proofs.sh idris2`
+| exit 0; 7/7 PASS, 0 quarantined
+
+| The constitutional companion is total and axiom-free
+| `grep` on `verification/proofs/idris2/BlackGlider/Constitution.idr`
+| `%default total` at line 10; 0 `believe_me`, `postulate` or
+  `assert_total`
+
+| Coq, Agda and Lean proof modules compile under their gates
+| `check-proofs.sh coq`, `AGDA_DIR=<scratch> check-proofs.sh agda`,
+  `check-proofs.sh lean4`
+| exit 0 each; 1/1 PASS each
+
+| No banned construct is used in proof code
+| `bash scripts/scan-dangerous.sh`
+| exit 0
+
+| The golden path is green
+| `just test && just quality` (with `AGDA_DIR=<scratch>`)
+| exit 0
+
+| The aspect, e2e and template validators pass
+| `bash tests/aspect_tests.sh`; `bash tests/e2e.sh`;
+  `bash scripts/validate-template.sh`
+| exit 0 each; PASS=2/0 fail; PASS=6/0 fail; 0 errors, 6 warnings
+|===
+
+[#planted]
+=== Planted-defect controls (each gate can fail)
+
+Each defect was planted in a fresh `git archive HEAD` extract, never in the
+tree that was checked.
+
+[cols="3,2,1", options="header"]
+|===
+| Planted defect | Gate | Result
+
+| Type error (`plantedBad : Nat = "x"`) in the gated
+  `verification/proofs/idris2/Types.idr`
+| `check-proofs.sh idris2`
+| exit 1, "1 failure(s)"
+
+| An `.idr` file absent from the Idris2 MANIFEST
+| `check-proofs.sh idris2`
+| exit 1, "absent from ... MANIFEST"
+
+| `theorem planted : 1 = 2 := by sorry` in the Lean file
+| `scan-dangerous.sh`
+| exit 1, "1 file(s) use dangerous constructs"
+
+| A test asserting `expect(false)` in `test/integration_test.zig`
+| `zig build test`
+| exit 1; 11/12 tests passed
+|===
+
+[[nuance]]
+=== The honest nuance you must not lose
+
+* *C1–C13 is 13 obligations in 12 tests.* C3 and C4 share one test
+  function (`c3_c4_snark_reaction_...`). The old file's "12 constitutional
+  obligations C1–C13" counted tests, not obligations.
+* *Exhaustion is over finite domains.* 512 local configurations and 65,536
+  4×4 worlds are complete for those domains only. Behaviour on larger worlds
+  rests on the 240-generation Snark trace (C2–C4) and on C12's causal-radius
+  test, not on a proof (DEBT T-1).
+* *The Coq, Agda and Lean modules prove nothing about this project.* They are
+  RSR template exemplars. Their PASS is a statement about the gate (DEBT
+  P-1).
+* *No refinement connects the Idris2 model to the Rust kernel.* Both sides
+  pass, and nothing proves they agree (DEBT P-2).
+* *The Zig FFI is an unconsumed seam.* It builds and tests, but the Rust
+  kernel does not call it (DEBT C-3).
+* *The Lean gate ran on Lean 4.15.0.* `check-proofs.sh` printed a Lean 4.34.1
+  banner from the repo root, but it compiles from inside
+  `verification/proofs/lean4`, where elan selects the pinned `v4.15.0`.
+
+=== Known-incomplete but honestly fenced
+
+* `scripts/check-proofs.sh` treats a missing prover as fatal rather than a
+  skip. It also rejects any proof file missing from its MANIFEST, as the
+  second planted control shows.
+* `.github/settings.yml` sets `contexts: []` at line 190 and gives the
+  reason in comments, so no check is required to merge (DEBT CI-2).
+
+[[outstanding]]
+=== Outstanding / weak / refuted (no spin)
+
+* *Agda gate fails as configured on this machine.* Without a scratch
+  `AGDA_DIR`, `bash scripts/check-proofs.sh agda` exits 1 with "RESULT:
+  FAIL (1 failure(s))". `~/.agda/libraries` points at a deleted job
+  directory (`~/.claude/jobs/e5960853/tmp/agda-lib-defs/`). That is a
+  machine fault, not a repo fault, and it was not modified. As a result,
+  `just test` as-is is red on this machine.
+* *`reuse lint` fails.* exit 1. 225 of 463 files carry copyright
+  information, and 428 of 463 carry licence information.
+  `AGPL-3.0-or-later` is reported as an unused licence in `LICENSES/`
+  (DEBT L-1, L-2). The old file said 224/453.
+* *Refuted from the 2026-08-07 file:*
+** It said "`grep` finds no `CABICompliant`/`StructLayout` reference outside
+   `verification/proofs`; the only inhabitant is a fieldless empty
+   struct". At this anchor `src/interface/Abi/Layout.idr` defines both
+   (lines 73 and 98). Its inhabitant `exampleLayoutValid` (line 123) is a
+   three-field, 24-byte struct. The file has existed since `bf51869`
+   (2026-08-04), before the old base commit. The underlying point still
+   holds: no `.zig` or `.rs` file references either name.
+** It said the erased-accessor repair "is what the shipped seam
+   `src/interface/Abi/Types.idr` already does". No file under
+   `src/interface/Abi` mentions `SafePtr` or `safePtrNeverNull`. The repair
+   exists only in `verification/proofs/idris2/ABI/Pointers.idr:43`
+   (`0 safePtrNeverNull`).
+* *Not re-run from the old file:*
+** The alignment-0 attack being rejected ("Mismatch between: S ?x and 0").
+** The `--codegen refc --dumpcases` representation measurement.
+** "`proof-gate.yml` has not yet had a green run". This needs CI history,
+   which this file does not cite, and the GitHub API was rate-limited.
+* *Not run:* `verification/proofs/tlaplus/StateMachine.tla` (no model
+  checker, DEBT P-4); `cargo bench` and the readiness suite (DEBT T-3);
+  `tests/fuzz`.
+
+== Reproduce it yourself
+
+Run these from a clean checkout of the anchor commit, with the toolchain
+above on `PATH` and a valid Agda `libraries` file.
+
+[source,bash]
+----
+cargo build --all-targets --locked     # exit 0, 0 warnings
+cargo test --all-targets --locked      # 6 + 6 passed, 0 failed
+cargo fmt --check                      # exit 0
+cargo clippy --all-targets -- -D warnings   # exit 0
+(cd src/interface/ffi && zig build test --summary all)  # 11/11 tests
+idris2 --typecheck abi.ipkg            # exit 0
+for p in idris2 coq agda lean4; do bash scripts/check-proofs.sh "$p"; done
+                                       # 7/7, 1/1, 1/1, 1/1 PASS
+bash scripts/scan-dangerous.sh         # exit 0
+just test && just quality              # exit 0
+bash tests/aspect_tests.sh             # PASS=2 FAIL=0
+bash tests/e2e.sh                      # PASS=6 FAIL=0
+bash scripts/validate-template.sh      # 0 errors, 6 warnings
+reuse lint                             # exit 1
+----
+
+== One-line characterisation (quote this)
+
+At `9f8da4ef`, an exhaustively tested, dependency-free Conway kernel (12/12
+constitutional tests) with a fully gated proof sweep (10/10 modules) whose
+gates demonstrably fail on planted defects. It is a foundation, not a game,
+and nothing yet proves the Idris2 model and the Rust kernel agree.
+
+== Joint attestation
+
+Engineering party (AI)::
+  `claude-opus-5-5` ran every command named above against
+  `9f8da4efe497fbe1f502e7471847b13eacee620a` between 2026-10-07T11:09:45Z
+  and 2026-10-07T11:19:48Z. The wording of this file faithfully reports
+  those runs, including the failures and the refutations of the previous
+  file.
+
+Owner / maintainer::
+  Jonathan D.A. Jewell affirms this file by landing it with a signed commit
+  whose parent is the anchor SHA:
+  `git commit -S -s -m "docs: affirm state at 9f8da4ef"`. He then verifies
+  it with `git log --show-signature -1`.
